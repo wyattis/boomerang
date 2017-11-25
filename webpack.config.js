@@ -3,7 +3,7 @@ const webpack = require('webpack');
 const path = require('path');
 
 const commonConfig = {
-    // devtool: 'source-map',
+    devtool: 'source-map',
     // module: {
     //     rules: [{
     //         test: /\.js$/,
@@ -25,12 +25,18 @@ const gameConfig = Object.assign({}, commonConfig, {
         path: path.resolve(__dirname, './build'),
         filename: 'boomerang.js'
     },
-    plugins: [
-        new webpack.SourceMapDevToolPlugin({
-            filename: '[name].js.map',
-            exclude: /(node_modules|bower_components)/,
+    // plugins: [
+    //     new webpack.SourceMapDevToolPlugin({
+    //         filename: '[name].js.map',
+    //         exclude: /(node_modules|bower_components)/,
+    //     })
+    // ],
+     plugins: [
+        new webpack.DefinePlugin({
+            'CANVAS_RENDERER': JSON.stringify(true),
+            'WEBGL_RENDERER': JSON.stringify(true)
         })
-    ],
+    ]
 });
 
 module.exports = [gameConfig];
