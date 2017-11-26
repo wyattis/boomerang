@@ -24,8 +24,8 @@ class Game extends Phaser.Scene{
         this.center = {x: this.physics.world.bounds.width / 2, y: this.physics.world.bounds.height / 2};
 
         this.boomerang = this.physics.add.sprite(400, 200, 'boomerang');
-        this.boomerang.setVisible(false);
-        this.boomerang.setActive(false);
+        // this.boomerang.setVisible(false);
+        // this.boomerang.setActive(false);
 
         
         
@@ -54,6 +54,12 @@ class Game extends Phaser.Scene{
         this.makeClouds(100, -200, 300);
         this.level = 0;
         this.createLevels();
+        
+        
+        // Input stuff
+        this.pointerIsDown = false;
+        this.startDrag = {};
+        this.endDrag = {};
     }
     
     makeClouds(n, rMin, rMax){
@@ -75,17 +81,25 @@ class Game extends Phaser.Scene{
 
     pointerDown(event){
         // this.next();
-        console.log('down', event, event.x, event.y);
-        if(event.gameObject){
-            debugger;
-        }
+        // console.log('down', event, event.x, event.y);
+        this.startDrag.x = event.x;
+        this.startDrag.y = event.y;
+        this.pointerIsDown = true;
     }
     
     pointerMove(event){
-        
+        if(this.pointerIsDown){
+            // TODO: Update an arrow on the screen
+        }
     }
     pointerUp(event){
-        
+        this.endDrag.x = event.x;
+        this.endDrag.y = event.y;
+        this.pointerIsDown = false;
+        let v = {x: this.endDrag.x - this.startDrag.x, y: this.endDrag.y - this.startDrag.y};
+        if(v.x*v.x + v.x*v.x >= 20*20){
+            this.throw(v);
+        }
     }
     
     animatePause(){
@@ -150,7 +164,7 @@ class Game extends Phaser.Scene{
             props: {
                 scrollX:  center.x - this.cameras.main.width * 0.5,
                 scrollY:  center.y - this.cameras.main.width * 0.5,
-                rotation: middleTheta - 1,
+                rotation: middleTheta ,
                 zoom: 1
             },
             duration: duration,
@@ -160,7 +174,7 @@ class Game extends Phaser.Scene{
                     targets: this.cameras.main,
                     props: {
                         rotation: middleTheta,
-                        zoom: .9
+                        zoom: 1
                     },
                     duration: duration,
                     ease: 'Cubic.easeInOut',
@@ -191,27 +205,20 @@ class Game extends Phaser.Scene{
 
     }
     
-    boomerangCollision(spriteA, spriteB){
-        
-        if((spriteA === this.boomerang && spriteB === this.player2) || (spriteB===this.boomerang && spriteA===this.player2)){
-            console.log('Winner!');
-            this.next();
-        } else{
-            this.boomerang.alive = false;
-            this.boomerang.visible = false;
-        }
-        
-    }
-    
-
     throw(vel){
+        let l = this.levels[this.level];
         this.boomerang.setVisible(true);
         this.boomerang.setActive(true);
-        this.boomerang.x = this.player.x;
-        this.boomerang.y = this.player.y;
-        this.boomerang.body.velocity.set(vel.x, vel.y);
+        // debugger;
+        let r = l.player1.originY * l.player1.height;
+        this.boomerang.x = l.player1.x + r * Math.sin(l.player1.rotation) + l.player1.originX * l.player1.width;
+        this.boomerang.y = l.player1.y - r * Math.cos(l.player1.rotation);
+        // debugger;
+        console.log(this.boomerang.x, this.boomerang.y);
+        this.boomerang.setVelocity(vel.x, vel.y);
         this.throwCount ++;
         console.log("Throw!");
+        // this.cameras.main.startFollow(this.boomerang);
     }
     
     
@@ -237,7 +244,6 @@ class Game extends Phaser.Scene{
         let level = this.cache.json.get('level1');
         let groundHeight = level.properties.groundHeight;
         let startAngle = 0;
-        let stopAngle = 0;
         let angleDelta = (level.tilewidth) / this.planetRadius;
         this.tiles = [];
         this.levels = [];
@@ -250,24 +256,39 @@ class Game extends Phaser.Scene{
                 if(!c)
                     continue;
                 // Player 1
-                if(c === 9){
-                    let p = this.add.sprite(this.center.x, this.center.y, 'orangeman', 1);
-                    p.setOrigin(.5, (p.height * (level.height - h) + this.planetRadius) / p.height - groundHeight - 1);
-                    p.rotation = startAngle + angleDelta*w;
-                    levelConfig.player1 = p;
-                }
-                else if(c===10){
-                    let p = this.add.sprite(this.center.x, this.center.y, 'orangeman', 0);
-                    p.setOrigin(.5, (p.height * (level.height - h) + this.planetRadius) / p.height - groundHeight - 1);
-                    p.rotation = startAngle + angleDelta*w;
-                    levelConfig.player2 = p;
+                // if(c === 9){
+                //     let p = this.add.sprite(this.center.x, this.center.y, 'orangeman', 1);
+                //     p.setOrigin(.5, (p.height * (level.height - h) + this.planetRadius) / p.height - groundHeight - 1);
+                //     p.rotation = startAngle + angleDelta*w;
+                //     levelConfig.player1 = p;
+                // }
+                // else if(c===10){
+                //     let p = this.add.sprite(this.center.x, this.center.y, 'orangeman', 0);
+                //     p.setOrigin(.5, (p.height * (level.height - h) + this.planetRadius) / p.height - groundHeight - 1);
+                //     p.rotation = startAngle + angleDelta*w;
+                //     levelConfig.player2 = p;
+                // } else {
+                //     let tile = this.add.image(this.center.x, this.center.y, 'sheet', c - 1);
+                //     tile.setOrigin(.5, (tile.height * (level.height - h) + this.planetRadius) / tile.height - groundHeight);
+                //     tile.rotation = startAngle + angleDelta*w;
+                //     levelConfig.maxTheta = tile.rotation;
+                //     this.tiles.push(tile);
+                // }
+                let r = this.planetRadius + level.tileheight * (level.height - h - .5);
+                let theta = startAngle + angleDelta * w;
+                let x = this.center.x + r * Math.sin(theta);
+                let y = this.center.y - r * Math.cos(theta) + groundHeight*level.tileheight;
+                if(c===9 || c===10){
+                    let p = this.add.sprite(x, y, 'orangeman', 10 - c);
+                    p.rotation = theta;
+                    levelConfig['player' + (c - 8)] = p;
                 } else {
-                    let tile = this.add.image(this.center.x, this.center.y, 'sheet', c - 1);
-                    tile.setOrigin(.5, (tile.height * (level.height - h) + this.planetRadius) / tile.height - groundHeight);
-                    tile.rotation = startAngle + angleDelta*w;
+                    let tile = this.add.image(x, y, 'sheet', c - 1);
+                    tile.rotation = theta;
                     levelConfig.maxTheta = tile.rotation;
                     this.tiles.push(tile);
                 }
+                
             }
         }
         this.levels.push(levelConfig);
