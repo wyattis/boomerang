@@ -17,13 +17,18 @@ class Game extends Phaser.Scene{
     create(){
         
         // this.scene.launch('overlay');
-        
+        // debugger;
+        this.physics.world.engine.positionIterations = 10;
+        this.physics.world.engine.velocityIterations = 10;
         this.planetRadius = 3500;
         this.gravity = 180;
-        this.physics.world.setBounds(0, 0, this.planetRadius*2 + this.game.config.height, this.planetRadius*2 + this.game.config.width);
-        this.center = {x: this.physics.world.bounds.width / 2, y: this.physics.world.bounds.height / 2};
-
-        this.boomerang = this.physics.add.sprite(400, 200, 'boomerang');
+        this.bounds = {x:0,y:0,width:this.planetRadius*2 + this.game.config.height,height:this.planetRadius*2 + this.game.config.width};
+        this.physics.world.setBounds(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
+        this.center = {x: this.bounds.width / 2, y: this.bounds.height / 2};
+        this.boomerang = this.physics.add.sprite(400, 200, 'boomerang', {
+            mass: 2
+        });
+        // debugger;
         // this.boomerang.setVisible(false);
         // this.boomerang.setActive(false);
 
@@ -38,12 +43,23 @@ class Game extends Phaser.Scene{
         planetGraphics.fillStyle(0x60bd37, 1.0);
         planetGraphics.fillCircle(this.planetRadius, this.planetRadius, this.planetRadius);
         planetGraphics.generateTexture('planet', this.planetRadius*2, this.planetRadius*2);
-        this.planet = this.physics.add.staticImage(this.center.x, this.center.y, 'planet');
-        this.planet.setCircle(this.planetRadius);
+        this.planet = this.physics.add.image(this.center.x, this.center.y, 'planet', {
+            isStatic: true, 
+            isCircle: true, 
+            plugin: {
+                attractors: [function(a, b){
+                    return {
+                        x: (a.position.x - b.position.x) * 0.000001,
+                        y: (a.position.y - b.position.y) * 0.000001
+                    };
+                }]
+            }
+        });
+        // this.planet.setCircle(this.planetRadius);
+        // debugger;
 
-        
-        this.physics.add.collider(this.boomerang, this.planet);
-        this.physics.add.collider(this.boomerang, this.player2);
+        // this.physics.add.collider(this.boomerang, this.planet);
+        // this.physics.add.collider(this.boomerang, this.player2);
         
         this.input.events.on('POINTER_DOWN_EVENT', this.pointerDown.bind(this));
         this.input.events.on('POINTER_MOVE_EVENT', this.pointerMove.bind(this));
@@ -96,14 +112,16 @@ class Game extends Phaser.Scene{
         this.endDrag.x = event.x;
         this.endDrag.y = event.y;
         this.pointerIsDown = false;
-        let v = {x: this.endDrag.x - this.startDrag.x, y: this.endDrag.y - this.startDrag.y};
-        if(v.x*v.x + v.x*v.x >= 20*20){
+        // let v = {x: this.endDrag.x - this.startDrag.x, y: this.endDrag.y - this.startDrag.y};
+        // debugger;
+        let v = new Phaser.Math.Vector2(this.endDrag.x-this.startDrag.x, this.endDrag.y-this.startDrag.y);
+        if(v.lengthSq() >= 20*20){
             this.throw(v);
         }
     }
     
     animatePause(){
-        
+        this.physics.world.engine.enableSleeping = true;
         this.centerOnPoint(this.center, 1500, .07, ()=>{
             // this.scene.pause();
         });
@@ -119,6 +137,8 @@ class Game extends Phaser.Scene{
     }
     
     animateUnpause(){
+        debugger;
+        this.physics.world.engine.enableSleeping = false;
         this.scene.resume();
         if(this.cameraRotation){
             this.cameraRotation.stop();
@@ -154,33 +174,30 @@ class Game extends Phaser.Scene{
 
     }
     
-    zoomToLevel( duration=1500){
+    zoomToLevel( duration=2500){
         let lev = this.levels[this.level];
         let middleTheta = (lev.minTheta + lev.maxTheta) /2;
         let center = {x: this.center.x + this.planetRadius * Math.sin(middleTheta), y: this.center.y - this.planetRadius * Math.cos(middleTheta) };
-
         this.tweens.add({
             targets: this.cameras.main,
             props: {
-                scrollX:  center.x - this.cameras.main.width * 0.5,
-                scrollY:  center.y - this.cameras.main.width * 0.5,
-                rotation: middleTheta ,
+                scrollX:  {
+                    value: center.x - this.cameras.main.width * 0.5,
+                    duration: duration / 2
+                },
+                scrollY:  {
+                    value: center.y - this.cameras.main.width * 0.5,
+                    duration: duration / 2
+                },
+                rotation: {
+                    value: -middleTheta,
+                    duration: duration / 2
+                },
                 zoom: 1
             },
             duration: duration,
             ease: 'Cubic.easeInOut',
-            onComplete: () => {
-                this.tweens.add({
-                    targets: this.cameras.main,
-                    props: {
-                        rotation: middleTheta,
-                        zoom: 1
-                    },
-                    duration: duration,
-                    ease: 'Cubic.easeInOut',
-                    onComplete: this.startLevel.bind(this)
-                });
-            }
+            onComplete: this.startLevel.bind(this)
         });
         
     }
@@ -198,6 +215,7 @@ class Game extends Phaser.Scene{
             // this.game.physics.arcade.collide(this.boomerang, this.planet);
             // this.game.physics.arcade.collide(this.boomerang, this.player2);
         // }
+        // this.cameras.main.rotation += .001;
         let i = this.clouds.length;
         while(i--){
             this.clouds[i].setRotation(this.clouds[i].rotation + this.clouds[i].omega);
@@ -215,6 +233,9 @@ class Game extends Phaser.Scene{
         this.boomerang.y = l.player1.y - r * Math.cos(l.player1.rotation);
         // debugger;
         console.log(this.boomerang.x, this.boomerang.y);
+        // debugger;
+        
+        vel.normalize().scale(10);
         this.boomerang.setVelocity(vel.x, vel.y);
         this.throwCount ++;
         console.log("Throw!");
@@ -279,11 +300,20 @@ class Game extends Phaser.Scene{
                 let x = this.center.x + r * Math.sin(theta);
                 let y = this.center.y - r * Math.cos(theta) + groundHeight*level.tileheight;
                 if(c===9 || c===10){
-                    let p = this.add.sprite(x, y, 'orangeman', 10 - c);
+                    let p = this.physics.add.sprite(x, y, 'orangeman', 10 - c, {
+                        isStatic: true
+                    });
                     p.rotation = theta;
                     levelConfig['player' + (c - 8)] = p;
                 } else {
-                    let tile = this.add.image(x, y, 'sheet', c - 1);
+                    let tile;
+                    if([1,2,5,6].indexOf(c) === -1){
+                        tile = this.physics.add.image(x, y, 'sheet', c - 1, {
+                            // isStatic: true
+                        });
+                    } else {
+                        tile = this.add.image(x, y, 'sheet', c-1);
+                    }
                     tile.rotation = theta;
                     levelConfig.maxTheta = tile.rotation;
                     this.tiles.push(tile);

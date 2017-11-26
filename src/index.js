@@ -10,10 +10,17 @@ var config = {
     height: 600,
     scene: [Game, Overlay, Menu],
     physics: {
-        default: 'arcade',
-        arcade: {
-            gravity: { y: 180 },
-            debug: true
+        default: 'matter',
+        matter: {
+            enableSleeping: true,
+            debug: true,
+            gravity: {
+                x: 0,
+                y: 0
+            },
+            plugins: {
+                attractors: true
+            }
         }
     }
 };
