@@ -137,7 +137,7 @@ class Game extends Phaser.Scene{
     }
     
     animateUnpause(){
-        debugger;
+       
         this.physics.world.engine.enableSleeping = false;
         this.scene.resume();
         if(this.cameraRotation){
