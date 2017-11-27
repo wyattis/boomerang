@@ -78,8 +78,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_phaser__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__scenes_Game__ = __webpack_require__(2);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__scenes_Menu__ = __webpack_require__(4);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__scenes_Overlay__ = __webpack_require__(5);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__scenes_Menu__ = __webpack_require__(7);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__scenes_Overlay__ = __webpack_require__(8);
 
 
 
@@ -90,21 +90,7 @@ var config = {
     backgroundColor: "#4488AA",
     width: 900,
     height: 600,
-    scene: [__WEBPACK_IMPORTED_MODULE_1__scenes_Game__["a" /* default */], __WEBPACK_IMPORTED_MODULE_3__scenes_Overlay__["a" /* default */], __WEBPACK_IMPORTED_MODULE_2__scenes_Menu__["a" /* default */]],
-    physics: {
-        default: 'matter',
-        matter: {
-            enableSleeping: true,
-            debug: true,
-            gravity: {
-                x: 0,
-                y: 0
-            },
-            plugins: {
-                attractors: true
-            }
-        }
-    }
+    scene: [__WEBPACK_IMPORTED_MODULE_1__scenes_Game__["a" /* default */], __WEBPACK_IMPORTED_MODULE_3__scenes_Overlay__["a" /* default */], __WEBPACK_IMPORTED_MODULE_2__scenes_Menu__["a" /* default */]]
 };
 
 
@@ -119,7 +105,14 @@ game.scene.start('game');
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_phaser__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__ui_Arrow__ = __webpack_require__(3);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__components_PolarPhysics__ = __webpack_require__(4);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__components_PolarImage__ = __webpack_require__(5);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__components_PolarSprite__ = __webpack_require__(6);
 /*global Phaser*/
+
+
+
+
 
 
 
@@ -133,22 +126,23 @@ class Game extends Phaser.Scene{
         this.load.image('boomerang', 'assets/Boomerarm.png');
         this.load.image('cloud', 'assets/cloud.png');
         this.load.spritesheet('orangeman', 'assets/orangeman.png', {frameWidth: 49, frameHeight: 52});
-        this.load.spritesheet('sheet', 'assets/Boomtiles.png', {frameWidth: 16, frameHeight:16, padding:0});
+        this.load.spritesheet('sheet', 'assets/BoomtilesB.png', {frameWidth: 32, frameHeight: 32});
+        this.load.spritesheet('bouncer', 'assets/Bouncer.png', {frameWidth: 64, frameHeight: 32});
     }
     create(){
         
-        // this.scene.launch('overlay');
-        // debugger;
-        this.physics.world.engine.positionIterations = 10;
-        this.physics.world.engine.velocityIterations = 10;
+        this.physics = new __WEBPACK_IMPORTED_MODULE_2__components_PolarPhysics__["a" /* default */](this);
         this.planetRadius = 3500;
-        this.gravity = 180;
+        this.physics.setBounds(this.planetRadius, this.planetRadius + this.game.config.height);
+        this.physics.gravity.r = -.1;
         this.bounds = {x:0,y:0,width:this.planetRadius*2 + this.game.config.height,height:this.planetRadius*2 + this.game.config.width};
-        this.physics.world.setBounds(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
         this.center = {x: this.bounds.width / 2, y: this.bounds.height / 2};
-        this.boomerang = this.physics.add.sprite(400, 200, 'boomerang', {
-            mass: 2
-        });
+        // this.boomerang = this.add.sprite(400, 200, 'boomerang');
+        this.boomerang = new __WEBPACK_IMPORTED_MODULE_4__components_PolarSprite__["a" /* default */](this, 0, 0, 'boomerang');
+        this.physics.add(this.boomerang);
+        this.boomerang.center = this.center;
+        this.physics.setGravity(this.boomerang);
+        this.boomerang.lockRotation = false;
         // debugger;
         // this.boomerang.setVisible(false);
         // this.boomerang.setActive(false);
@@ -164,27 +158,21 @@ class Game extends Phaser.Scene{
         planetGraphics.fillStyle(0x60bd37, 1.0);
         planetGraphics.fillCircle(this.planetRadius, this.planetRadius, this.planetRadius);
         planetGraphics.generateTexture('planet', this.planetRadius*2, this.planetRadius*2);
-        this.planet = this.physics.add.image(this.center.x, this.center.y, 'planet', {
-            isStatic: true, 
-            isCircle: true, 
-            plugin: {
-                attractors: [function(a, b){
-                    return {
-                        x: (a.position.x - b.position.x) * 0.000001,
-                        y: (a.position.y - b.position.y) * 0.000001
-                    };
-                }]
-            }
-        });
+        // this.planet = this.add.image(this.center.x, this.center.y, 'planet');
+        this.planet = this.add.image(this.center.x, this.center.y, 'planet');
         // this.planet.setCircle(this.planetRadius);
         // debugger;
 
-        // this.physics.add.collider(this.boomerang, this.planet);
-        // this.physics.add.collider(this.boomerang, this.player2);
-        
         this.input.events.on('POINTER_DOWN_EVENT', this.pointerDown.bind(this));
         this.input.events.on('POINTER_MOVE_EVENT', this.pointerMove.bind(this));
         this.input.events.on('POINTER_UP_EVENT', this.pointerUp.bind(this));
+        
+        this.input.keyboard.events.on('KEY_DOWN_A', this.left.bind(this));
+        this.input.keyboard.events.on('KEY_DOWN_D', this.right.bind(this));
+        this.input.keyboard.events.on('KEY_DOWN_W', this.startJump.bind(this));
+        this.input.keyboard.events.on('KEY_UP_W', this.stopJump.bind(this));
+        this.input.keyboard.events.on('KEY_DOWN_SPACEBAR', this.startJump.bind(this));
+        this.input.keyboard.events.on('KEY_UP_SPACEBAR', this.startJump.bind(this));
         
         console.log(this.cameras.main);
         this.centerOnPoint(this.center, 1000, .07, () => {this.scene.launch('menu')});
@@ -192,11 +180,26 @@ class Game extends Phaser.Scene{
         this.level = 0;
         this.createLevels();
         
-        
         // Input stuff
         this.pointerIsDown = false;
         this.startDrag = {};
         this.endDrag = {};
+    }
+    
+    startJump(){
+        this.levels[this.level].player1.acceleration.r = 2;
+    }
+    
+    stopJump(){
+        this.levels[this.level].player1.acceleration.r = 0;
+    }
+    
+    left(){
+        this.levels[this.level].player1.velocity.theta = -0.001;
+    }
+    
+    right(){
+        this.levels[this.level].player1.velocity.theta = 0.001;
     }
     
     makeClouds(n, rMin, rMax){
@@ -212,6 +215,7 @@ class Game extends Phaser.Scene{
     }
     
     onPause(e){
+        this.physics.pause();
         this.animatePause();
         this.scene.launch('menu');
     }
@@ -242,7 +246,6 @@ class Game extends Phaser.Scene{
     }
     
     animatePause(){
-        this.physics.world.engine.enableSleeping = true;
         this.centerOnPoint(this.center, 1500, .07, ()=>{
             // this.scene.pause();
         });
@@ -258,9 +261,8 @@ class Game extends Phaser.Scene{
     }
     
     animateUnpause(){
-        debugger;
-        this.physics.world.engine.enableSleeping = false;
         this.scene.resume();
+        this.physics.unpause();
         if(this.cameraRotation){
             this.cameraRotation.stop();
         }
@@ -328,13 +330,12 @@ class Game extends Phaser.Scene{
     }
     
     update(){
-        
+        this.physics.update();
         // this.rotatePlanet();
         // this.captureThrow();
         
         // if(this.boomerang.alive){
-            // this.game.physics.arcade.collide(this.boomerang, this.planet);
-            // this.game.physics.arcade.collide(this.boomerang, this.player2);
+
         // }
         // this.cameras.main.rotation += .001;
         let i = this.clouds.length;
@@ -344,20 +345,24 @@ class Game extends Phaser.Scene{
 
     }
     
-    throw(vel){
+    throw(dirMag){
         let l = this.levels[this.level];
+        this.children.bringToTop(this.boomerang);
         this.boomerang.setVisible(true);
         this.boomerang.setActive(true);
-        // debugger;
-        let r = l.player1.originY * l.player1.height;
-        this.boomerang.x = l.player1.x + r * Math.sin(l.player1.rotation) + l.player1.originX * l.player1.width;
-        this.boomerang.y = l.player1.y - r * Math.cos(l.player1.rotation);
-        // debugger;
-        console.log(this.boomerang.x, this.boomerang.y);
-        // debugger;
         
-        vel.normalize().scale(10);
-        this.boomerang.setVelocity(vel.x, vel.y);
+        this.boomerang.updatePosition(l.player1.theta, l.player1.r);
+        // this.boomerang.r = l.player1.r;
+        // this.boomerang.theta = l.player1.theta;
+        this.children.bringToTop(l.player2);
+        // l.player2.updatePosition(l.player1.theta, l.player1.r);
+        
+        dirMag.scale(.02);
+        this.boomerang.velocity.theta = dirMag.x / this.boomerang.r;
+        this.boomerang.velocity.r = -dirMag.y;
+        this.boomerang.velocity.angular = Phaser.Math.Clamp(dirMag.lengthSq() / 40, 0, 15);
+        console.log(this.boomerang.x, this.boomerang.y, dirMag.x, dirMag.y);
+        // this.boomerang.setdirMagocity(dirMag.x, dirMag.y);
         this.throwCount ++;
         console.log("Throw!");
         // this.cameras.main.startFollow(this.boomerang);
@@ -392,51 +397,48 @@ class Game extends Phaser.Scene{
         let levelConfig = {
             minTheta: startAngle
         };
+        debugger;
         for(let h=0; h<level.height; h++){
             for(let w=0; w<level.width; w++){
                 let c = level.layers[0].data[w + h*level.width];
                 if(!c)
                     continue;
-                // Player 1
-                // if(c === 9){
-                //     let p = this.add.sprite(this.center.x, this.center.y, 'orangeman', 1);
-                //     p.setOrigin(.5, (p.height * (level.height - h) + this.planetRadius) / p.height - groundHeight - 1);
-                //     p.rotation = startAngle + angleDelta*w;
-                //     levelConfig.player1 = p;
-                // }
-                // else if(c===10){
-                //     let p = this.add.sprite(this.center.x, this.center.y, 'orangeman', 0);
-                //     p.setOrigin(.5, (p.height * (level.height - h) + this.planetRadius) / p.height - groundHeight - 1);
-                //     p.rotation = startAngle + angleDelta*w;
-                //     levelConfig.player2 = p;
-                // } else {
-                //     let tile = this.add.image(this.center.x, this.center.y, 'sheet', c - 1);
-                //     tile.setOrigin(.5, (tile.height * (level.height - h) + this.planetRadius) / tile.height - groundHeight);
-                //     tile.rotation = startAngle + angleDelta*w;
-                //     levelConfig.maxTheta = tile.rotation;
-                //     this.tiles.push(tile);
-                // }
-                let r = this.planetRadius + level.tileheight * (level.height - h - .5);
+                let r = this.planetRadius + level.tileheight * (level.height - h - .5) - groundHeight*level.tileheight;
                 let theta = startAngle + angleDelta * w;
                 let x = this.center.x + r * Math.sin(theta);
                 let y = this.center.y - r * Math.cos(theta) + groundHeight*level.tileheight;
                 if(c===9 || c===10){
-                    let p = this.physics.add.sprite(x, y, 'orangeman', 10 - c, {
-                        isStatic: true
-                    });
-                    p.rotation = theta;
+                    let p = new __WEBPACK_IMPORTED_MODULE_4__components_PolarSprite__["a" /* default */](this, theta, r, 'orangeman', 10 - c);
+                    // this.physics.add(p);
+                    p.center = this.center;
+                    this.physics.add(p);
+                    p.friction.theta = .00001;
+                    // this.physics.setStatic(p);
+                    this.children.add(p);
+                    // p.rotation = theta;
                     levelConfig['player' + (c - 8)] = p;
+                } else if(c===13){
+                    let bouncer = new __WEBPACK_IMPORTED_MODULE_4__components_PolarSprite__["a" /* default */](this, theta, r - level.tileheight, 'bouncer', 0);
+                    bouncer.center = this.center;
+                    this.physics.add(bouncer);
+                    this.physics.setStatic(bouncer);
+                    bouncer.elasticity.r = 1.5;
+                    bouncer.elasticity.theta = .5;
+                    this.children.add(bouncer);
                 } else {
                     let tile;
                     if([1,2,5,6].indexOf(c) === -1){
-                        tile = this.physics.add.image(x, y, 'sheet', c - 1, {
-                            // isStatic: true
-                        });
+                        // tile = new PolarSprite(this, theta, - r + groundHeight*level.tileheight, 'sheet', c - 1);
+                        tile = new __WEBPACK_IMPORTED_MODULE_3__components_PolarImage__["a" /* default */](this, theta, r, 'sheet', c - 1);
+                        this.physics.add(tile);
+                        this.physics.setStatic(tile);
                     } else {
-                        tile = this.add.image(x, y, 'sheet', c-1);
+                        tile = new __WEBPACK_IMPORTED_MODULE_3__components_PolarImage__["a" /* default */](this, theta, r, 'sheet', c-1);
                     }
-                    tile.rotation = theta;
-                    levelConfig.maxTheta = tile.rotation;
+                    tile.center = this.center;
+                    this.children.add(tile);
+                    // tile.rotation = theta;
+                    levelConfig.maxTheta = theta;
                     this.tiles.push(tile);
                 }
                 
@@ -467,6 +469,436 @@ class Arrow extends Phaser.GameObjects.Graphics{
 
 /***/ }),
 /* 4 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+class PolarPhysics{
+    constructor(scene){
+        this.scene = scene;
+        this.bodies = [];
+        this.isPaused = true;
+        this.thetaTol = .00001;
+        this.rTol = .01;
+        this.angularTol = .001;
+        this.gravity = {
+            _theta: 0,
+            _r: 0,
+            set theta(theta){
+                this._theta = theta;
+            },
+            get theta(){
+                return this._theta;
+            },
+            set r(r){
+                this._r = r;
+            },
+            get r(){
+                return this._r;
+            }
+        };
+        this.bounds = {
+            rMin: 0,
+            rMax: 10000
+        };
+    }
+    setBounds(rMin, rMax){
+        this.bounds.rMin = rMin;
+        this.bounds.rMax = rMax;
+    }
+    add(obj){
+        obj.elasticity = {
+            theta: .1,
+            r: .1,
+            angular: 0
+        };
+        obj.velocity = {
+            theta: 0,
+            r: 0,
+            angular: 0
+        };
+        obj.acceleration = {
+            theta: 0,
+            r: 0,
+            angular: 0
+        };
+        obj.friction = {
+            theta: 0,
+            r: 0,
+            angular: 0
+        };
+
+        obj.lockRotation = true;
+        obj.isStatic = false;
+        obj.useGravity = false;
+        this.bodies.push(obj);
+        return obj;
+    }
+    pause(){
+        this.isPaused = true;
+    }
+    unpause(){
+        this.isPaused = false;
+    }
+    setElasticity(obj, val=1){
+        obj.elasticity = val;
+    }
+    setGravity(obj, val=true){
+        obj.useGravity = val;
+    }
+    setStatic(obj, val=true){
+        if(val){
+            obj.useGravity = false;
+        }
+        obj.isStatic = val;
+    }
+    update(time, delta){
+        
+        if(this.isPaused) {
+            return;
+        }
+        
+        let i = this.bodies.length;
+        while(i--){
+            // Radius
+            // if(this.bodies[i].isStatic){
+            //     return;
+            // }
+            
+            if(this.bodies[i].useGravity){
+                this.bodies[i].velocity.r += this.gravity.r;
+            }
+            this.bodies[i].velocity.r += this.bodies[i].acceleration.r;
+            if(this.bodies[i].velocity.r > this.rTol){
+                this.bodies[i].velocity.r -= this.bodies[i].friction.r;
+            } else if(this.bodies[i].velocity.r < -this.rTol){
+                this.bodies[i].velocity.r += this.bodies[i].friction.r;
+            } else{
+                this.bodies[i].velocity.r = 0;
+            }
+            this.bodies[i].r += this.bodies[i].velocity.r;
+            this.radiusCollision(i);
+            
+           
+            
+            // Theta
+            this.bodies[i].hasCollided = false;
+            if(this.bodies[i].useGravity){
+                this.bodies[i].velocity.theta += this.gravity.theta;
+            }
+            this.bodies[i].velocity.theta += this.bodies[i].acceleration.theta;
+            if(this.bodies[i].velocity.theta > this.thetaTol){
+                this.bodies[i].velocity.theta -= this.bodies[i].friction.theta;
+            } else if(this.bodies[i].velocity.theta < -this.thetaTol){
+                this.bodies[i].velocity.theta += this.bodies[i].friction.theta;
+            } else{
+                this.bodies[i].velocity.theta = 0;
+            }
+            this.bodies[i].theta += this.bodies[i].velocity.theta;
+            this.thetaCollision(i);
+            
+            
+            // Boundary collision
+            if(this.bodies[i].top > this.bounds.rMax){
+                this.bodies[i].r = this.bounds.rMax - this.bodies[i].height * this.bodies[i].originY;
+                this.bodies[i].velocity.r = 0;
+            } else if(this.bodies[i].bottom < this.bounds.rMin){
+                this.bodies[i].r = this.bounds.rMin + this.bodies[i].height * this.bodies[i].originY;
+                this.bodies[i].velocity.r = 0;
+                this.bodies[i].velocity.angular *= .9;
+            }
+            
+            
+            // Rotation
+            if(!this.bodies[i].lockRotation){
+                this.bodies[i].velocity.angular += this.bodies[i].acceleration.angular;
+                if(this.bodies[i].velocity.angular > this.angularTol){
+                    this.bodies[i].velocity.angular -= this.bodies[i].friction.angular;
+                } else if(this.bodies[i].velocity.angular < -this.angularTol){
+                    this.bodies[i].velocity.angular += this.bodies[i].friction.angular;
+                } else{
+                    this.bodies[i].velocity.angular = 0;
+                }
+                this.bodies[i].rotation += this.bodies[i].velocity.angular;
+            }
+            
+        }
+        // this.collisionCheck();
+    }
+    
+    intersects(a, b){
+        return !( a.left > b.right
+        || a.right < b.left
+        || a.top < b.bottom
+        || a.bottom > b.top);
+    }
+    
+    thetaCollision(i){
+        let j = this.bodies.length;
+        while(j--){
+            if(i !== j ){
+                let a = this.bodies[i];
+                let b = this.bodies[j];
+                // console.log(a.isStatic, b.isStatic);
+                if(!a.hasCollided && !b.hasCollided && !((a.isStatic && b.isStatic ) || (!a.isStatic && !b.isStatic))){
+                    // if(a.velocity.theta > 0)
+                    //     console.log(a.left, a.right, a.top, a.bottom);
+                    if(this.intersects(a, b)){
+                        a.hasCollided = true;
+                        if(a.onCollision){
+                            a.onCollision(b);
+                        }
+                        if(b.onCollision){
+                            b.onCollision(a);
+                        }
+                        if(b.isStatic){
+                            a.theta -= a.velocity.theta;
+                            a.velocity.theta *= -b.elasticity.theta;
+                        } else {
+                            // debugger;
+                            b.theta -= b.velocity.theta;
+                            b.velocity.theta *= -a.elasticity.theta;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    radiusCollision(i){
+        let j = this.bodies.length;
+        while(j--){
+            if(i !== j ){
+                let a = this.bodies[i];
+                let b = this.bodies[j];
+                if(!a.hasCollided && !b.hasCollided && !((a.isStatic && b.isStatic ) || (!a.isStatic && !b.isStatic))){
+                    if(this.intersects(a, b)){
+                        a.hasCollided = true;
+                        if(b.isStatic){
+                            a.r -= a.velocity.r;
+                            a.velocity.r *= -b.elasticity.r;
+                        } else {
+                            b.r -= b.velocity.r;
+                            b.velocity.r *= -a.elasticity.r;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    collisionCheck(){
+        let i = this.bodies.length;
+        while(i--){
+            let j = this.bodies.length;
+            while(j--){
+                if(i !== j ){
+                    let a = this.bodies[i];
+                    let b = this.bodies[j];
+                    // console.log(a.isStatic, b.isStatic);
+                    if(!a.hasCollided && !b.hasCollided && !((a.isStatic && b.isStatic ) || (!a.isStatic && !b.isStatic))){
+                        // if(a.velocity.theta > 0)
+                        //     console.log(a.left, a.right, a.top, a.bottom);
+                        if(this.intersects(a, b)){
+                            a.hasCollided = true;
+                            if(b.isStatic){
+                                a.velocity.theta *= -1;
+                                a.theta += a.velocity.theta;
+                            } else {
+                                // debugger;
+                                b.velocity.theta *= -1;
+                                b.theta += b.velocity.theta;
+                            }
+                        }
+                    }
+                }
+            }
+            // debugger;
+        }
+    }
+}
+
+/* harmony default export */ __webpack_exports__["a"] = (PolarPhysics);
+
+/***/ }),
+/* 5 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_phaser__);
+
+
+class PolarImage extends Phaser.GameObjects.Image{
+    constructor(game, theta, r, cacheKey, frame, config){
+        super(game, 0, 0, cacheKey, frame, config);
+        this._r = r;
+        this._theta = theta;
+        this._center = {x:0, y:0};
+        this.updatePosition(theta, r);
+    }
+    
+    updatePosition(theta, r){
+        this.r = r;
+        this.theta = theta;
+    }
+    
+    get left(){
+        return this._left;
+    }
+    
+    get right(){
+        return this._right;
+    }
+    
+    get top(){
+        return this._top;
+    }
+    
+    get bottom(){
+        return this._bottom;
+    }
+    
+    set center(c){
+        this._center = c;
+    }
+    
+    get center(){
+        return this._center;
+    }
+    
+    set r(r){
+        this._r = r;
+        this._bottom = r - this.height * this.originY;
+        this._top = r + this.height * this.originY;
+        this.updateCartesian();
+    }
+    
+    set theta(theta){
+        if(theta > 2*Math.PI){
+            // debugger;
+            this._theta = theta - 2 * Math.PI;
+        } else if(theta < 0){
+            // debugger;
+            this._theta = 2*Math.PI - theta;
+        } else {
+            this._theta = theta;
+        }
+        this._left = this._theta - (this.width * this.originX) / this.r;
+        this._right = this._theta + (this.width * this.originX) / this.r;
+        this.setRotation(this._theta);
+        this.updateCartesian();
+    }
+    
+    updateCartesian(){
+        this.x = this._center.x + this._r * Math.sin(this._theta);
+        this.y = this._center.y - this._r * Math.cos(this._theta);
+    }
+    
+    get r(){
+        return this._r;
+    }
+    
+    get theta(){
+        return this._theta;
+    }
+    
+}
+
+/* harmony default export */ __webpack_exports__["a"] = (PolarImage);
+
+/***/ }),
+/* 6 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_phaser__);
+
+
+class PolarSprite extends Phaser.GameObjects.Sprite{
+    constructor(game, theta, r, cacheKey, frame, config){
+        super(game, 0, 0, cacheKey, frame, config);
+        this._r = r;
+        this._theta = theta;
+        this._center = {x:0, y:0};
+        this.lockRotation = true;
+        this.updatePosition(theta, r);
+    }
+    
+    updatePosition(theta, r){
+        this.r = r;
+        this.theta = theta;
+    }
+    
+    get left(){
+        return this._left;
+    }
+    
+    get right(){
+        return this._right;
+    }
+    
+    get top(){
+        return this._top;
+    }
+    
+    get bottom(){
+        return this._bottom;
+    }
+    
+    set center(c){
+        this._center = c;
+    }
+    
+    get center(){
+        return this._center;
+    }
+    
+    set r(r){
+        this._r = r;
+        this._bottom = r - this.height * this.originY;
+        this._top = r + this.height * this.originY;
+        this.updateCartesian();
+    }
+    
+    set theta(theta){
+        if(theta > 2*Math.PI){
+            // debugger;
+            this._theta = theta - 2 * Math.PI;
+        } else if(theta < 0){
+            // debugger;
+            this._theta = 2*Math.PI - theta;
+        } else {
+            this._theta = theta;
+        }
+        this._left = this._theta - (this.width * this.originX) / this.r;
+        this._right = this._theta + (this.width * this.originX) / this.r;
+        if(this.lockRotation){
+            this.setRotation(this._theta);
+        }
+        this.updateCartesian();
+    }
+    
+    updateCartesian(){
+        this.x = this._center.x + this._r * Math.sin(this._theta);
+        this.y = this._center.y - this._r * Math.cos(this._theta);
+    }
+    
+    get r(){
+        return this._r;
+    }
+    
+    get theta(){
+        return this._theta;
+    }
+    
+}
+
+
+/* harmony default export */ __webpack_exports__["a"] = (PolarSprite);
+
+/***/ }),
+/* 7 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -510,7 +942,7 @@ class Menu extends Phaser.Scene{
 /* harmony default export */ __webpack_exports__["a"] = (Menu);
 
 /***/ }),
-/* 5 */
+/* 8 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";

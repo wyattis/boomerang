@@ -8,21 +8,7 @@ var config = {
     backgroundColor: "#4488AA",
     width: 900,
     height: 600,
-    scene: [Game, Overlay, Menu],
-    physics: {
-        default: 'matter',
-        matter: {
-            enableSleeping: true,
-            debug: true,
-            gravity: {
-                x: 0,
-                y: 0
-            },
-            plugins: {
-                attractors: true
-            }
-        }
-    }
+    scene: [Game, Overlay, Menu]
 };
 
 
