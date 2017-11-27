@@ -33,6 +33,14 @@ class Game extends Phaser.Scene{
         this.boomerang.center = this.center;
         this.physics.setGravity(this.boomerang);
         this.boomerang.lockRotation = false;
+        
+        let config = {
+            key: 'bounce',
+            frames: this.anims.generateFrameNumbers('bouncer', {start: 0, end: 14, first: 0}),
+            frameRate: 10,
+            repeat: 3
+        };
+        this.anims.create(config);
         // debugger;
         // this.boomerang.setVisible(false);
         // this.boomerang.setActive(false);
@@ -77,7 +85,7 @@ class Game extends Phaser.Scene{
     }
     
     startJump(){
-        this.levels[this.level].player1.acceleration.r = 2;
+        this.levels[this.level].player1.acceleration.r = .1;
     }
     
     stopJump(){
@@ -287,7 +295,6 @@ class Game extends Phaser.Scene{
         let levelConfig = {
             minTheta: startAngle
         };
-        debugger;
         for(let h=0; h<level.height; h++){
             for(let w=0; w<level.width; w++){
                 let c = level.layers[0].data[w + h*level.width];
@@ -302,18 +309,61 @@ class Game extends Phaser.Scene{
                     // this.physics.add(p);
                     p.center = this.center;
                     this.physics.add(p);
+                    p.useGravity = true;
                     p.friction.theta = .00001;
-                    // this.physics.setStatic(p);
+
                     this.children.add(p);
                     // p.rotation = theta;
                     levelConfig['player' + (c - 8)] = p;
-                } else if(c===13){
-                    let bouncer = new PolarSprite(this, theta, r - level.tileheight, 'bouncer', 0);
+                } else if(c >= 13 && c <= 16){
+                    let bouncer = new PolarSprite(this, theta, r - level.tileheight, 'bouncer').play('bounce');
                     bouncer.center = this.center;
                     this.physics.add(bouncer);
                     this.physics.setStatic(bouncer);
-                    bouncer.elasticity.r = 1.5;
-                    bouncer.elasticity.theta = .5;
+                    bouncer.lockRotation = false;
+                    // debugger;
+                    let bigE = 1.2;
+                    let littleE = .5;
+                    let littleDim = level.tileheight / 2 - 15;
+                    let bigDim = level.tilewidth;
+                    if(c===13 || c===15){
+                        bouncer.setSize(bigDim, littleDim);
+                        bouncer.elasticity.r = bigE;
+                        bouncer.elasticity.theta = littleE;
+                    } else if(c===14 || c===16){
+                        bouncer.setSize(littleDim, bigDim);
+                        bouncer.elasticity.theta = bigE;
+                        bouncer.elasticity.r = littleE;
+                    }
+                    
+                    bouncer.updatePosition(theta, r);
+                    
+                    bouncer.onCollision = (function(bouncer){
+                        return function(a){
+                            bouncer.anims.play('bounce');
+                        };
+                    })(bouncer);
+                    
+                    bouncer.customRCollision = (function(a){
+                        // TODO: Add a custom bounce for the 
+                        console.log('custom R');
+                    }).bind(bouncer);
+                    
+                    bouncer.customThetaCollision = (function(a){
+                        // TODO: Add a custom bounce for the 
+                        console.log('custom theta');
+                    }).bind(bouncer);
+                    
+                    if(c===14){
+                        // bouncer.r += level.tileheight;
+                        bouncer.rotation = theta + Math.PI / 2;
+                    } else if(c===15){
+                        // bouncer.r += level.tileheight;
+                        bouncer.rotation = theta + Math.PI;
+                    } else if(c===16){
+                        // bouncer.r += level.tileheight;
+                        bouncer.rotation = theta - Math.PI / 2;
+                    }
                     this.children.add(bouncer);
                 } else {
                     let tile;
@@ -325,6 +375,7 @@ class Game extends Phaser.Scene{
                     } else {
                         tile = new PolarImage(this, theta, r, 'sheet', c-1);
                     }
+                    tile.updatePosition(theta, r);
                     tile.center = this.center;
                     this.children.add(tile);
                     // tile.rotation = theta;

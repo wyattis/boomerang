@@ -33,8 +33,8 @@ class PolarPhysics{
     }
     add(obj){
         obj.elasticity = {
-            theta: .1,
-            r: .1,
+            theta: .2,
+            r: .2,
             angular: 0
         };
         obj.velocity = {
