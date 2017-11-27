@@ -8,14 +8,7 @@ var config = {
     backgroundColor: "#4488AA",
     width: 900,
     height: 600,
-    scene: [Game, Overlay, Menu],
-    physics: {
-        default: 'arcade',
-        arcade: {
-            gravity: { y: 180 },
-            debug: true
-        }
-    }
+    scene: [Game, Overlay, Menu]
 };
 
 

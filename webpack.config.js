@@ -16,6 +16,9 @@ const commonConfig = {
     //         }
     //     }]
     // }
+     externals: {
+        "phaser": "Phaser"
+     }
 };
 
 const gameConfig = Object.assign({}, commonConfig, {
