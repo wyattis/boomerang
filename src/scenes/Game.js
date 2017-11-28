@@ -12,12 +12,23 @@ class Game extends Phaser.Scene{
         super(config);
     }
     preload(){
-        this.load.json('level1', 'levels/world1/level1.json');
-        this.load.image('boomerang', 'assets/Boomerarm.png');
-        this.load.image('cloud', 'assets/cloud.png');
-        this.load.spritesheet('orangeman', 'assets/orangeman.png', {frameWidth: 49, frameHeight: 52});
-        this.load.spritesheet('sheet', 'assets/BoomtilesB.png', {frameWidth: 32, frameHeight: 32});
-        this.load.spritesheet('bouncer', 'assets/Bouncer.png', {frameWidth: 64, frameHeight: 32});
+        // Levels
+        this.load.json('level1', 'assets/levels/world1/level1.json');
+        
+        // Sprites
+        this.load.image('boomerang', 'assets/images/Boomerarm.png');
+        this.load.image('cloud', 'assets/images/cloud.png');
+        this.load.spritesheet('orangeman', 'assets/images/orangeman.png', {frameWidth: 49, frameHeight: 52});
+        this.load.spritesheet('sheet', 'assets/images/BoomtilesB.png', {frameWidth: 32, frameHeight: 32});
+        this.load.spritesheet('bouncer', 'assets/images/Bouncer.png', {frameWidth: 64, frameHeight: 32});
+        
+        // Audio
+        this.load.audio('boomerarminair', 'assets/audio/boomerairminair.wav');
+        this.load.audio('boomerinair', 'assets/audio/boomerinair.wav');
+        this.load.audio('bounce', 'assets/audio/bounce.wav');
+        this.load.audio('crash', 'assets/audio/crash.wav');
+        this.load.audio('collision', 'assets/audio/collision.wav');
+        
     }
     create(){
         
@@ -27,7 +38,6 @@ class Game extends Phaser.Scene{
         this.physics.gravity.r = -.1;
         this.bounds = {x:0,y:0,width:this.planetRadius*2 + this.game.config.height,height:this.planetRadius*2 + this.game.config.width};
         this.center = {x: this.bounds.width / 2, y: this.bounds.height / 2};
-        // this.boomerang = this.add.sprite(400, 200, 'boomerang');
         this.boomerang = new PolarSprite(this, 0, 0, 'boomerang');
         this.physics.add(this.boomerang);
         this.boomerang.center = this.center;
@@ -41,15 +51,10 @@ class Game extends Phaser.Scene{
             repeat: 3
         };
         this.anims.create(config);
-        // debugger;
-        // this.boomerang.setVisible(false);
-        // this.boomerang.setActive(false);
 
         
-        
-        this.arrow = new Arrow(this, 0, 0);
-        
-        
+        // this.arrow = new Arrow(this, 0, 0);
+
         // this.planet = this.game.add.sprite(400, 1000, 'circle');
         let planetGraphics =  this.make.graphics({x: 0, y: 0, add: false});
         // planetGraphics.lineStyle(1, 0xff0000, 1.0);
@@ -61,6 +66,24 @@ class Game extends Phaser.Scene{
         // this.planet.setCircle(this.planetRadius);
         // debugger;
 
+        console.log(this.cameras.main);
+        this.centerOnPoint(this.center, 1000, .07, () => {this.scene.launch('menu')});
+        this.makeClouds(100, -200, 300);
+        this.level = 0;
+        this.createLevels();
+
+        this.createAudio();
+        this.createInput();
+    }
+    
+    createAudio(){
+        
+        debugger;
+        
+    }
+    
+    createInput(){
+        
         this.input.events.on('POINTER_DOWN_EVENT', this.pointerDown.bind(this));
         this.input.events.on('POINTER_MOVE_EVENT', this.pointerMove.bind(this));
         this.input.events.on('POINTER_UP_EVENT', this.pointerUp.bind(this));
@@ -72,16 +95,11 @@ class Game extends Phaser.Scene{
         this.input.keyboard.events.on('KEY_DOWN_SPACEBAR', this.startJump.bind(this));
         this.input.keyboard.events.on('KEY_UP_SPACEBAR', this.startJump.bind(this));
         
-        console.log(this.cameras.main);
-        this.centerOnPoint(this.center, 1000, .07, () => {this.scene.launch('menu')});
-        this.makeClouds(100, -200, 300);
-        this.level = 0;
-        this.createLevels();
-        
         // Input stuff
         this.pointerIsDown = false;
         this.startDrag = {};
         this.endDrag = {};
+        
     }
     
     startJump(){
