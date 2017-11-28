@@ -7,7 +7,7 @@ class Overlay extends Phaser.Scene{
         super(config);
     }
     preload(){
-        this.load.image('pause', 'assets/pause.png');
+        this.load.image('pause', 'assets/images/pause.png');
     }
     create(){
         this.pauseButton = this.add.image(32, 32, 'pause').setInteractive();

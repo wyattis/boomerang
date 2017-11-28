@@ -23,15 +23,17 @@ class Game extends Phaser.Scene{
         this.load.spritesheet('bouncer', 'assets/images/Bouncer.png', {frameWidth: 64, frameHeight: 32});
         
         // Audio
-        this.load.audio('boomerarminair', 'assets/audio/boomerairminair.wav');
-        this.load.audio('boomerinair', 'assets/audio/boomerinair.wav');
+        this.load.audio('boomerinair', 'assets/audio/boomerinair4.wav');
+        this.load.audio('boomerinair2', 'assets/audio/boomerinair3.wav');
         this.load.audio('bounce', 'assets/audio/bounce.wav');
         this.load.audio('crash', 'assets/audio/crash.wav');
+        this.load.audio('throw', 'assets/audio/throw.wav');
         this.load.audio('collision', 'assets/audio/collision.wav');
         
     }
     create(){
         
+        this.sounds = {};
         this.physics = new PolarPhysics(this);
         this.planetRadius = 3500;
         this.physics.setBounds(this.planetRadius, this.planetRadius + this.game.config.height);
@@ -44,11 +46,27 @@ class Game extends Phaser.Scene{
         this.physics.setGravity(this.boomerang);
         this.boomerang.lockRotation = false;
         
+        this.boomerang.onCollision = (function(sounds, boomerang){
+            return function(b){
+                if(b.type === 'wall'){
+                    sounds['crash'].play({
+                        volume : (Math.abs(boomerang.velocity.r) + Math.abs(boomerang.velocity.theta * boomerang.r)) / 15
+                    });
+                } else if(b.type === 'ground'){
+                    if(boomerang.velocity.r < -1){
+                        sounds['collision'].play({
+                            volume : (Math.abs(boomerang.velocity.r) + Math.abs(boomerang.velocity.theta * boomerang.r)) / 15
+                        });
+                    }
+                }
+            };
+        })(this.sounds, this.boomerang);
+        
         let config = {
             key: 'bounce',
             frames: this.anims.generateFrameNumbers('bouncer', {start: 0, end: 14, first: 0}),
-            frameRate: 10,
-            repeat: 3
+            frameRate: 20,
+            repeat: 0
         };
         this.anims.create(config);
 
@@ -68,17 +86,23 @@ class Game extends Phaser.Scene{
 
         console.log(this.cameras.main);
         this.centerOnPoint(this.center, 1000, .07, () => {this.scene.launch('menu')});
-        this.makeClouds(100, -200, 300);
+        this.makeClouds(40, -200, 300);
         this.level = 0;
-        this.createLevels();
 
         this.createAudio();
         this.createInput();
+        this.createLevels();
+        
     }
     
     createAudio(){
         
-        debugger;
+        this.sounds.boomerinair = this.game.sound.add('boomerinair');
+        this.sounds.boomerinair2 = this.game.sound.add('boomerinair2');
+        this.sounds.bounce = this.game.sound.add('bounce');
+        this.sounds.crash = this.game.sound.add('crash');
+        this.sounds.throw = this.game.sound.add('throw');
+        this.sounds.collision = this.game.sound.add('collision');
         
     }
     
@@ -281,6 +305,13 @@ class Game extends Phaser.Scene{
         // this.boomerang.setdirMagocity(dirMag.x, dirMag.y);
         this.throwCount ++;
         console.log("Throw!");
+        this.sounds['throw'].play();
+        this.sounds['boomerinair'].play({
+            volume : .6
+        });
+        this.sounds['boomerinair2'].play({
+            volume : .3
+        });
         // this.cameras.main.startFollow(this.boomerang);
     }
     
@@ -329,12 +360,13 @@ class Game extends Phaser.Scene{
                     this.physics.add(p);
                     p.useGravity = true;
                     p.friction.theta = .00001;
-
+                    
                     this.children.add(p);
                     // p.rotation = theta;
                     levelConfig['player' + (c - 8)] = p;
                 } else if(c >= 13 && c <= 16){
                     let bouncer = new PolarSprite(this, theta, r - level.tileheight, 'bouncer').play('bounce');
+                    bouncer.type = 'bouncer';
                     bouncer.center = this.center;
                     this.physics.add(bouncer);
                     this.physics.setStatic(bouncer);
@@ -356,11 +388,15 @@ class Game extends Phaser.Scene{
                     
                     bouncer.updatePosition(theta, r);
                     
-                    bouncer.onCollision = (function(bouncer){
+                    bouncer.onCollision = (function(sounds, bouncer){
                         return function(a){
+                            let v = (Math.abs(a.velocity.r) + Math.abs(a.velocity.theta * a.r)) / 15;
+                            sounds['bounce'].play({
+                                volume: v > 1 ? 1 : v
+                            });
                             bouncer.anims.play('bounce');
                         };
-                    })(bouncer);
+                    })(this.sounds, bouncer);
                     
                     bouncer.customRCollision = (function(a){
                         // TODO: Add a custom bounce for the 
@@ -383,6 +419,7 @@ class Game extends Phaser.Scene{
                         bouncer.rotation = theta - Math.PI / 2;
                     }
                     this.children.add(bouncer);
+                    this.add.updateList.add(bouncer);
                 } else {
                     let tile;
                     if([1,2,5,6].indexOf(c) === -1){
@@ -390,11 +427,14 @@ class Game extends Phaser.Scene{
                         tile = new PolarImage(this, theta, r, 'sheet', c - 1);
                         this.physics.add(tile);
                         this.physics.setStatic(tile);
+                        tile.type = 'wall';
                     } else {
-                        tile = new PolarImage(this, theta, r, 'sheet', c-1);
+                        console.log(theta, r);
+                        tile = new PolarImage(this, theta, r, 'sheet', c - 1);
+                        tile.type = 'ground';
                     }
-                    tile.updatePosition(theta, r);
                     tile.center = this.center;
+                    tile.updatePosition(theta, r);
                     this.children.add(tile);
                     // tile.rotation = theta;
                     levelConfig.maxTheta = theta;
