@@ -6,13 +6,13 @@ class Menu extends Phaser.Scene{
         super(config);
     }
     preload(){
-        this.load.image('play', 'assets/play.png');
-        this.load.image('menu-background', 'assets/menu-background.png');
+        this.load.image('play', 'assets/images/play.png');
+        this.load.image('menu-background', 'assets/images/menu-background.png');
     }
     create(){
         this.scene.bringToTop();
-        let background = this.add.image(this.game.config.width / 2, this.game.config.height / 2, 'menu-background');
-        background.setScale(.7);
+        // let background = this.add.image(this.game.config.width / 2, this.game.config.height / 2, 'menu-background');
+        // background.setScale(.7);
         this.play = this.add.image(this.game.config.width / 2, this.game.config.height / 2, 'play').setInteractive();
         this.input.events.on('GAME_OBJECT_DOWN_EVENT', this.onPlay.bind(this));
     }

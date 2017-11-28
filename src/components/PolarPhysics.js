@@ -125,9 +125,19 @@ class PolarPhysics{
             
             // Boundary collision
             if(this.bodies[i].top > this.bounds.rMax){
+                if(this.bodies[i].onCollision){
+                    this.bodies[i].onCollision({
+                        type: 'ground'
+                    });
+                }
                 this.bodies[i].r = this.bounds.rMax - this.bodies[i].height * this.bodies[i].originY;
                 this.bodies[i].velocity.r = 0;
             } else if(this.bodies[i].bottom < this.bounds.rMin){
+                if(this.bodies[i].onCollision){
+                    this.bodies[i].onCollision({
+                        type: 'ground'
+                    });
+                }
                 this.bodies[i].r = this.bounds.rMin + this.bodies[i].height * this.bodies[i].originY;
                 this.bodies[i].velocity.r = 0;
                 this.bodies[i].velocity.angular *= .9;
@@ -199,6 +209,12 @@ class PolarPhysics{
                 if(!a.hasCollided && !b.hasCollided && !((a.isStatic && b.isStatic ) || (!a.isStatic && !b.isStatic))){
                     if(this.intersects(a, b)){
                         a.hasCollided = true;
+                        if(a.onCollision){
+                            a.onCollision(b);
+                        }
+                        if(b.onCollision){
+                            b.onCollision(a);
+                        }
                         if(b.isStatic){
                             a.r -= a.velocity.r;
                             a.velocity.r *= -b.elasticity.r;

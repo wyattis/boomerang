@@ -122,44 +122,67 @@ class Game extends Phaser.Scene{
         super(config);
     }
     preload(){
-        this.load.json('level1', 'levels/world1/level1.json');
-        this.load.image('boomerang', 'assets/Boomerarm.png');
-        this.load.image('cloud', 'assets/cloud.png');
-        this.load.spritesheet('orangeman', 'assets/orangeman.png', {frameWidth: 49, frameHeight: 52});
-        this.load.spritesheet('sheet', 'assets/BoomtilesB.png', {frameWidth: 32, frameHeight: 32});
-        this.load.spritesheet('bouncer', 'assets/Bouncer.png', {frameWidth: 64, frameHeight: 32});
+        // Levels
+        this.load.json('level1', 'assets/levels/world1/level1.json');
+        
+        // Sprites
+        this.load.image('boomerang', 'assets/images/Boomerarm.png');
+        this.load.image('cloud', 'assets/images/cloud.png');
+        this.load.spritesheet('orangeman', 'assets/images/orangeman.png', {frameWidth: 49, frameHeight: 52});
+        this.load.spritesheet('sheet', 'assets/images/BoomtilesB.png', {frameWidth: 32, frameHeight: 32});
+        this.load.spritesheet('bouncer', 'assets/images/Bouncer.png', {frameWidth: 64, frameHeight: 32});
+        
+        // Audio
+        this.load.audio('boomerinair', 'assets/audio/boomerinair4.wav');
+        this.load.audio('boomerinair2', 'assets/audio/boomerinair3.wav');
+        this.load.audio('bounce', 'assets/audio/bounce.wav');
+        this.load.audio('crash', 'assets/audio/crash.wav');
+        this.load.audio('throw', 'assets/audio/throw.wav');
+        this.load.audio('collision', 'assets/audio/collision.wav');
+        
     }
     create(){
         
+        this.sounds = {};
         this.physics = new __WEBPACK_IMPORTED_MODULE_2__components_PolarPhysics__["a" /* default */](this);
         this.planetRadius = 3500;
         this.physics.setBounds(this.planetRadius, this.planetRadius + this.game.config.height);
         this.physics.gravity.r = -.1;
         this.bounds = {x:0,y:0,width:this.planetRadius*2 + this.game.config.height,height:this.planetRadius*2 + this.game.config.width};
         this.center = {x: this.bounds.width / 2, y: this.bounds.height / 2};
-        // this.boomerang = this.add.sprite(400, 200, 'boomerang');
         this.boomerang = new __WEBPACK_IMPORTED_MODULE_4__components_PolarSprite__["a" /* default */](this, 0, 0, 'boomerang');
         this.physics.add(this.boomerang);
         this.boomerang.center = this.center;
         this.physics.setGravity(this.boomerang);
         this.boomerang.lockRotation = false;
         
+        this.boomerang.onCollision = (function(sounds, boomerang){
+            return function(b){
+                if(b.type === 'wall'){
+                    sounds['crash'].play({
+                        volume : (Math.abs(boomerang.velocity.r) + Math.abs(boomerang.velocity.theta * boomerang.r)) / 15
+                    });
+                } else if(b.type === 'ground'){
+                    if(boomerang.velocity.r < -1){
+                        sounds['collision'].play({
+                            volume : (Math.abs(boomerang.velocity.r) + Math.abs(boomerang.velocity.theta * boomerang.r)) / 15
+                        });
+                    }
+                }
+            };
+        })(this.sounds, this.boomerang);
+        
         let config = {
             key: 'bounce',
             frames: this.anims.generateFrameNumbers('bouncer', {start: 0, end: 14, first: 0}),
-            frameRate: 10,
-            repeat: 3
+            frameRate: 20,
+            repeat: 0
         };
         this.anims.create(config);
-        // debugger;
-        // this.boomerang.setVisible(false);
-        // this.boomerang.setActive(false);
 
         
-        
-        this.arrow = new __WEBPACK_IMPORTED_MODULE_1__ui_Arrow__["a" /* default */](this, 0, 0);
-        
-        
+        // this.arrow = new Arrow(this, 0, 0);
+
         // this.planet = this.game.add.sprite(400, 1000, 'circle');
         let planetGraphics =  this.make.graphics({x: 0, y: 0, add: false});
         // planetGraphics.lineStyle(1, 0xff0000, 1.0);
@@ -171,6 +194,30 @@ class Game extends Phaser.Scene{
         // this.planet.setCircle(this.planetRadius);
         // debugger;
 
+        console.log(this.cameras.main);
+        this.centerOnPoint(this.center, 1000, .07, () => {this.scene.launch('menu')});
+        this.makeClouds(40, -200, 300);
+        this.level = 0;
+
+        this.createAudio();
+        this.createInput();
+        this.createLevels();
+        
+    }
+    
+    createAudio(){
+        
+        this.sounds.boomerinair = this.game.sound.add('boomerinair');
+        this.sounds.boomerinair2 = this.game.sound.add('boomerinair2');
+        this.sounds.bounce = this.game.sound.add('bounce');
+        this.sounds.crash = this.game.sound.add('crash');
+        this.sounds.throw = this.game.sound.add('throw');
+        this.sounds.collision = this.game.sound.add('collision');
+        
+    }
+    
+    createInput(){
+        
         this.input.events.on('POINTER_DOWN_EVENT', this.pointerDown.bind(this));
         this.input.events.on('POINTER_MOVE_EVENT', this.pointerMove.bind(this));
         this.input.events.on('POINTER_UP_EVENT', this.pointerUp.bind(this));
@@ -182,16 +229,11 @@ class Game extends Phaser.Scene{
         this.input.keyboard.events.on('KEY_DOWN_SPACEBAR', this.startJump.bind(this));
         this.input.keyboard.events.on('KEY_UP_SPACEBAR', this.startJump.bind(this));
         
-        console.log(this.cameras.main);
-        this.centerOnPoint(this.center, 1000, .07, () => {this.scene.launch('menu')});
-        this.makeClouds(100, -200, 300);
-        this.level = 0;
-        this.createLevels();
-        
         // Input stuff
         this.pointerIsDown = false;
         this.startDrag = {};
         this.endDrag = {};
+        
     }
     
     startJump(){
@@ -373,6 +415,13 @@ class Game extends Phaser.Scene{
         // this.boomerang.setdirMagocity(dirMag.x, dirMag.y);
         this.throwCount ++;
         console.log("Throw!");
+        this.sounds['throw'].play();
+        this.sounds['boomerinair'].play({
+            volume : .6
+        });
+        this.sounds['boomerinair2'].play({
+            volume : .3
+        });
         // this.cameras.main.startFollow(this.boomerang);
     }
     
@@ -421,12 +470,13 @@ class Game extends Phaser.Scene{
                     this.physics.add(p);
                     p.useGravity = true;
                     p.friction.theta = .00001;
-
+                    
                     this.children.add(p);
                     // p.rotation = theta;
                     levelConfig['player' + (c - 8)] = p;
                 } else if(c >= 13 && c <= 16){
                     let bouncer = new __WEBPACK_IMPORTED_MODULE_4__components_PolarSprite__["a" /* default */](this, theta, r - level.tileheight, 'bouncer').play('bounce');
+                    bouncer.type = 'bouncer';
                     bouncer.center = this.center;
                     this.physics.add(bouncer);
                     this.physics.setStatic(bouncer);
@@ -448,11 +498,15 @@ class Game extends Phaser.Scene{
                     
                     bouncer.updatePosition(theta, r);
                     
-                    bouncer.onCollision = (function(bouncer){
+                    bouncer.onCollision = (function(sounds, bouncer){
                         return function(a){
+                            let v = (Math.abs(a.velocity.r) + Math.abs(a.velocity.theta * a.r)) / 15;
+                            sounds['bounce'].play({
+                                volume: v > 1 ? 1 : v
+                            });
                             bouncer.anims.play('bounce');
                         };
-                    })(bouncer);
+                    })(this.sounds, bouncer);
                     
                     bouncer.customRCollision = (function(a){
                         // TODO: Add a custom bounce for the 
@@ -475,6 +529,7 @@ class Game extends Phaser.Scene{
                         bouncer.rotation = theta - Math.PI / 2;
                     }
                     this.children.add(bouncer);
+                    this.add.updateList.add(bouncer);
                 } else {
                     let tile;
                     if([1,2,5,6].indexOf(c) === -1){
@@ -482,11 +537,14 @@ class Game extends Phaser.Scene{
                         tile = new __WEBPACK_IMPORTED_MODULE_3__components_PolarImage__["a" /* default */](this, theta, r, 'sheet', c - 1);
                         this.physics.add(tile);
                         this.physics.setStatic(tile);
+                        tile.type = 'wall';
                     } else {
-                        tile = new __WEBPACK_IMPORTED_MODULE_3__components_PolarImage__["a" /* default */](this, theta, r, 'sheet', c-1);
+                        console.log(theta, r);
+                        tile = new __WEBPACK_IMPORTED_MODULE_3__components_PolarImage__["a" /* default */](this, theta, r, 'sheet', c - 1);
+                        tile.type = 'ground';
                     }
-                    tile.updatePosition(theta, r);
                     tile.center = this.center;
+                    tile.updatePosition(theta, r);
                     this.children.add(tile);
                     // tile.rotation = theta;
                     levelConfig.maxTheta = theta;
@@ -516,7 +574,7 @@ class Arrow extends Phaser.GameObjects.Graphics{
     
 }
 
-/* harmony default export */ __webpack_exports__["a"] = (Arrow);
+/* unused harmony default export */ var _unused_webpack_default_export = (Arrow);
 
 /***/ }),
 /* 4 */
@@ -650,9 +708,19 @@ class PolarPhysics{
             
             // Boundary collision
             if(this.bodies[i].top > this.bounds.rMax){
+                if(this.bodies[i].onCollision){
+                    this.bodies[i].onCollision({
+                        type: 'ground'
+                    });
+                }
                 this.bodies[i].r = this.bounds.rMax - this.bodies[i].height * this.bodies[i].originY;
                 this.bodies[i].velocity.r = 0;
             } else if(this.bodies[i].bottom < this.bounds.rMin){
+                if(this.bodies[i].onCollision){
+                    this.bodies[i].onCollision({
+                        type: 'ground'
+                    });
+                }
                 this.bodies[i].r = this.bounds.rMin + this.bodies[i].height * this.bodies[i].originY;
                 this.bodies[i].velocity.r = 0;
                 this.bodies[i].velocity.angular *= .9;
@@ -724,6 +792,12 @@ class PolarPhysics{
                 if(!a.hasCollided && !b.hasCollided && !((a.isStatic && b.isStatic ) || (!a.isStatic && !b.isStatic))){
                     if(this.intersects(a, b)){
                         a.hasCollided = true;
+                        if(a.onCollision){
+                            a.onCollision(b);
+                        }
+                        if(b.onCollision){
+                            b.onCollision(a);
+                        }
                         if(b.isStatic){
                             a.r -= a.velocity.r;
                             a.velocity.r *= -b.elasticity.r;
@@ -963,13 +1037,13 @@ class Menu extends Phaser.Scene{
         super(config);
     }
     preload(){
-        this.load.image('play', 'assets/play.png');
-        this.load.image('menu-background', 'assets/menu-background.png');
+        this.load.image('play', 'assets/images/play.png');
+        this.load.image('menu-background', 'assets/images/menu-background.png');
     }
     create(){
         this.scene.bringToTop();
-        let background = this.add.image(this.game.config.width / 2, this.game.config.height / 2, 'menu-background');
-        background.setScale(.7);
+        // let background = this.add.image(this.game.config.width / 2, this.game.config.height / 2, 'menu-background');
+        // background.setScale(.7);
         this.play = this.add.image(this.game.config.width / 2, this.game.config.height / 2, 'play').setInteractive();
         this.input.events.on('GAME_OBJECT_DOWN_EVENT', this.onPlay.bind(this));
     }
@@ -1008,7 +1082,7 @@ class Overlay extends Phaser.Scene{
         super(config);
     }
     preload(){
-        this.load.image('pause', 'assets/pause.png');
+        this.load.image('pause', 'assets/images/pause.png');
     }
     create(){
         this.pauseButton = this.add.image(32, 32, 'pause').setInteractive();
