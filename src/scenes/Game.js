@@ -312,10 +312,14 @@ class Game extends Phaser.Scene{
     }
     
     enableLevelPhysics(){
-        this.boomerang.setActive(true);
+        this.physics.enable(this.boomerang);
         this.boomerang.setVisible(true);
+        this.boomerang.velocity.theta = 0;
+        this.boomerang.velocity.r = 0;
         let l = this.levels[this.level];
         let p = l.player1;
+        this.boomerang.r = p.r;
+        this.boomerang.theta = p.theta;
         p.setVisible(true);
         this.physics.enable(p);
         // this.physics.setStatic(p);
@@ -341,7 +345,7 @@ class Game extends Phaser.Scene{
     }
     
     disableLevelPhysics(){
-        this.boomerang.setActive(false);
+        this.physics.disable(this.boomerang);
         this.boomerang.setVisible(false);
         let l = this.levels[this.level];
         let p = l.player1;
@@ -371,8 +375,8 @@ class Game extends Phaser.Scene{
         console.log('starting level', this.level);
     }
     
-    update(){
-        this.physics.update();
+    update(time, delta){
+        this.physics.update(time, delta);
         let i = this.clouds.length;
         while(i--){
             this.clouds[i].setRotation(this.clouds[i].rotation + this.clouds[i].omega);
