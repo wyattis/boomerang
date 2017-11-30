@@ -2,6 +2,7 @@ class PolarPhysics{
     constructor(scene){
         this.scene = scene;
         this.bodies = [];
+        this.disabledBodies = [];
         this.isPaused = true;
         this.thetaTol = .00001;
         this.rTol = .01;
@@ -30,6 +31,22 @@ class PolarPhysics{
     setBounds(rMin, rMax){
         this.bounds.rMin = rMin;
         this.bounds.rMax = rMax;
+    }
+    disable(obj){
+        let index = this.bodies.indexOf(obj);
+        if(index > -1){
+            this.disabledBodies.push(this.bodies.splice(index, 1)[0]);
+        } else {
+            console.error("Unable to disable body that hasn't been added");
+        }
+    }
+    enable(obj){
+        let index = this.disabledBodies.indexOf(obj);
+        if(index > -1){
+            this.bodies.push(this.disabledBodies.splice(index, 1)[0]);
+        } else {
+            console.error("Unable to enable body that hasn't been added or disabled");
+        }
     }
     add(obj){
         obj.elasticity = {

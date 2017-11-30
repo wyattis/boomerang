@@ -1,11 +1,12 @@
 import 'phaser';
 
-class PolarImage extends Phaser.GameObjects.Image{
+class PolarSprite extends Phaser.GameObjects.Sprite{
     constructor(game, theta, r, cacheKey, frame, config){
         super(game, 0, 0, cacheKey, frame, config);
         this._r = r;
         this._theta = theta;
-        this._center = {x:0, y:0};
+        this._center = game.center || {x:0, y:0};
+        this.lockRotation = true;
         this.updatePosition(theta, r);
     }
     
@@ -57,7 +58,9 @@ class PolarImage extends Phaser.GameObjects.Image{
         }
         this._left = this._theta - (this.width * this.originX) / this.r;
         this._right = this._theta + (this.width * this.originX) / this.r;
-        this.setRotation(this._theta);
+        if(this.lockRotation){
+            this.setRotation(this._theta);
+        }
         this.updateCartesian();
     }
     
@@ -76,4 +79,5 @@ class PolarImage extends Phaser.GameObjects.Image{
     
 }
 
-export default PolarImage;
+
+export default PolarSprite;

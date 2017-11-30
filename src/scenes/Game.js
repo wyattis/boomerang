@@ -10,10 +10,14 @@ class Game extends Phaser.Scene{
     constructor(config={}){
         config.key = 'game';
         super(config);
+        this.levelNum = 2;
+        
     }
     preload(){
         // Levels
-        this.load.json('level1', 'assets/levels/world1/level1.json');
+        for(let l=1; l<=this.levelNum; l++){
+            this.load.json('level'+l, `assets/levels/world1/level${l}.json`);
+        }
         
         // Sprites
         this.load.image('boomerang', 'assets/images/Boomerarm.png');
@@ -124,6 +128,9 @@ class Game extends Phaser.Scene{
         this.startDrag = {};
         this.endDrag = {};
         
+        // Dragging
+        this.selectedObject = null;
+        
     }
     
     startJump(){
@@ -161,27 +168,64 @@ class Game extends Phaser.Scene{
     }
 
     pointerDown(event){
-        // this.next();
-        // console.log('down', event, event.x, event.y);
-        this.startDrag.x = event.x;
-        this.startDrag.y = event.y;
-        this.pointerIsDown = true;
+        let l = this.levels[this.level];
+        if(event.gameObject && event.gameObject.moveable){
+            event.gameObject.isMoving = true;
+            event.gameObject.startMoveCart = {x: event.x, y: event.y};
+            event.gameObject.startMovePolar = {r: event.gameObject.r, theta: event.gameObject.theta};
+            this.selectedObject = event.gameObject;
+        } else {
+            this.startDrag.x = event.x;
+            this.startDrag.y = event.y;
+            this.pointerIsDown = true;
+        }
     }
     
     pointerMove(event){
+        if(this.selectedObject && this.selectedObject.isMoving){
+            if(!this.selectedObject.lockTheta){
+                this.selectedObject.theta = this.selectedObject.startMovePolar.theta + (event.x - this.selectedObject.startMoveCart.x) / this.selectedObject.r;
+            }
+            if(!this.selectedObject.lockR){
+                this.selectedObject.r = this.selectedObject.startMovePolar.r - event.y + this.selectedObject.startMoveCart.y;
+            }
+            this.clampSelectedObject();
+        }
         if(this.pointerIsDown){
             // TODO: Update an arrow on the screen
         }
     }
+    
+    clampSelectedObject(){
+        if(!this.selectedObject.bounds)
+            return;
+        let b = this.selectedObject.bounds;
+            
+        if(b.minTheta && this.selectedObject.theta < b.minTheta){
+            this.selectedObject.theta = b.minTheta;
+        } else if(b.maxTheta && this.selectedObject.theta > b.maxTheta){
+            this.selectedObject.theta = b.maxTheta;
+        }
+        if(b.maxR && this.selectedObject.r > b.maxR){
+            this.selectedObject.r = b.maxR;
+        } else if(b.minR && this.selectedObject.r < b.minR){
+            this.selectedObject.r = b.minR;
+        }
+    }
+    
     pointerUp(event){
-        this.endDrag.x = event.x;
-        this.endDrag.y = event.y;
-        this.pointerIsDown = false;
-        // let v = {x: this.endDrag.x - this.startDrag.x, y: this.endDrag.y - this.startDrag.y};
-        // debugger;
-        let v = new Phaser.Math.Vector2(this.endDrag.x-this.startDrag.x, this.endDrag.y-this.startDrag.y);
-        if(v.lengthSq() >= 20*20){
-            this.throw(v);
+        if(this.selectedObject)
+            this.selectedObject.isMoving = false;
+        if(this.pointerIsDown){
+            this.endDrag.x = event.x;
+            this.endDrag.y = event.y;
+            this.pointerIsDown = false;
+            // let v = {x: this.endDrag.x - this.startDrag.x, y: this.endDrag.y - this.startDrag.y};
+            // debugger;
+            let v = new Phaser.Math.Vector2(this.endDrag.x-this.startDrag.x, this.endDrag.y-this.startDrag.y);
+            if(v.lengthSq() >= 20*20){
+                this.throw(v);
+            }
         }
     }
     
@@ -237,7 +281,9 @@ class Game extends Phaser.Scene{
 
     }
     
-    zoomToLevel( duration=2500){
+    zoomToLevel(duration=2500){
+        this.boomerang.setVisible(true);
+        this.enableLevelPhysics();
         let lev = this.levels[this.level];
         let middleTheta = (lev.minTheta + lev.maxTheta) /2;
         let center = {x: this.center.x + this.planetRadius * Math.sin(middleTheta), y: this.center.y - this.planetRadius * Math.cos(middleTheta) };
@@ -265,19 +311,68 @@ class Game extends Phaser.Scene{
         
     }
     
+    enableLevelPhysics(){
+        this.boomerang.setActive(true);
+        this.boomerang.setVisible(true);
+        let l = this.levels[this.level];
+        let p = l.player1;
+        p.setVisible(true);
+        this.physics.enable(p);
+        // this.physics.setStatic(p);
+        p.setInteractive();
+        p = l.player2;
+        p.setVisible(true);
+        this.physics.enable(p);
+        this.physics.setStatic(p);
+        p.onCollision = (function(obj){
+            if(obj === this.boomerang){
+                this.next();
+            }
+        }).bind(this);
+        for(let bouncer of l.bouncers){
+            this.physics.enable(bouncer);
+            this.add.updateList.add(bouncer);
+            bouncer.setVisible(true);
+            bouncer.setInteractive();
+        }
+        for(let tile of l.tiles){
+            this.physics.enable(tile);
+        }
+    }
+    
+    disableLevelPhysics(){
+        this.boomerang.setActive(false);
+        this.boomerang.setVisible(false);
+        let l = this.levels[this.level];
+        let p = l.player1;
+        p.setVisible(false);
+        this.physics.setStatic(p, false);
+        this.physics.disable(p);
+        this.sys.inputManager.disable(p);
+        // p.setInteractive();
+        p = l.player2;
+        p.setVisible(false);
+        this.physics.setStatic(p, false);
+        this.physics.disable(p);
+        p.onCollision = null;
+        for(let bouncer of l.bouncers){
+            this.physics.disable(bouncer);
+            this.add.updateList.add(bouncer);
+            bouncer.setVisible(false);
+            // bouncer.setInteractive();
+            this.sys.inputManager.disable(bouncer);
+        }
+        for(let tile of l.tiles){
+            this.physics.disable(tile);
+        }
+    }
+    
     startLevel(){
         console.log('starting level', this.level);
     }
     
     update(){
         this.physics.update();
-        // this.rotatePlanet();
-        // this.captureThrow();
-        
-        // if(this.boomerang.alive){
-
-        // }
-        // this.cameras.main.rotation += .001;
         let i = this.clouds.length;
         while(i--){
             this.clouds[i].setRotation(this.clouds[i].rotation + this.clouds[i].omega);
@@ -315,10 +410,8 @@ class Game extends Phaser.Scene{
         // this.cameras.main.startFollow(this.boomerang);
     }
     
-    
     next(){
-        this.boomerang.setActive(false);
-        this.boomerang.setVisible(false);
+        this.disableLevelPhysics();
         this.level += 1;
         if(this.level >= this.levels.length){
             this.level = 0;
@@ -326,124 +419,123 @@ class Game extends Phaser.Scene{
         this.zoomToLevel();
     }
     
-    render(){
-        //  this.game.debug.spriteInfo(this.player, 32, 32);
-        //  this.game.debug.spriteInfo(this.planet, 400, 32);
-        this.game.debug.spriteInfo(this.boomerang, 32, 32);
-        this.game.debug.cameraInfo(this.game.camera, 400, 32);
-    }
-    
-    
     createLevels(){
-        let level = this.cache.json.get('level1');
-        let groundHeight = level.properties.groundHeight;
         let startAngle = 0;
-        let angleDelta = (level.tilewidth) / this.planetRadius;
         this.tiles = [];
         this.levels = [];
-        let levelConfig = {
-            minTheta: startAngle
-        };
-        for(let h=0; h<level.height; h++){
-            for(let w=0; w<level.width; w++){
-                let c = level.layers[0].data[w + h*level.width];
-                if(!c)
-                    continue;
-                let r = this.planetRadius + level.tileheight * (level.height - h - .5) - groundHeight*level.tileheight;
-                let theta = startAngle + angleDelta * w;
-                let x = this.center.x + r * Math.sin(theta);
-                let y = this.center.y - r * Math.cos(theta) + groundHeight*level.tileheight;
-                if(c===9 || c===10){
-                    let p = new PolarSprite(this, theta, r, 'orangeman', 10 - c);
-                    // this.physics.add(p);
-                    p.center = this.center;
-                    this.physics.add(p);
-                    p.useGravity = true;
-                    p.friction.theta = .00001;
-                    
-                    this.children.add(p);
-                    // p.rotation = theta;
-                    levelConfig['player' + (c - 8)] = p;
-                } else if(c >= 13 && c <= 16){
-                    let bouncer = new PolarSprite(this, theta, r - level.tileheight, 'bouncer').play('bounce');
-                    bouncer.type = 'bouncer';
-                    bouncer.center = this.center;
-                    this.physics.add(bouncer);
-                    this.physics.setStatic(bouncer);
-                    bouncer.lockRotation = false;
-                    // debugger;
-                    let bigE = 1.2;
-                    let littleE = .5;
-                    let littleDim = level.tileheight / 2 - 15;
-                    let bigDim = level.tilewidth;
-                    if(c===13 || c===15){
-                        bouncer.setSize(bigDim, littleDim);
-                        bouncer.elasticity.r = bigE;
-                        bouncer.elasticity.theta = littleE;
-                    } else if(c===14 || c===16){
-                        bouncer.setSize(littleDim, bigDim);
-                        bouncer.elasticity.theta = bigE;
-                        bouncer.elasticity.r = littleE;
-                    }
-                    
-                    bouncer.updatePosition(theta, r);
-                    
-                    bouncer.onCollision = (function(sounds, bouncer){
-                        return function(a){
-                            let v = (Math.abs(a.velocity.r) + Math.abs(a.velocity.theta * a.r)) / 15;
-                            sounds['bounce'].play({
-                                volume: v > 1 ? 1 : v
-                            });
-                            bouncer.anims.play('bounce');
-                        };
-                    })(this.sounds, bouncer);
-                    
-                    bouncer.customRCollision = (function(a){
-                        // TODO: Add a custom bounce for the 
-                        console.log('custom R');
-                    }).bind(bouncer);
-                    
-                    bouncer.customThetaCollision = (function(a){
-                        // TODO: Add a custom bounce for the 
-                        console.log('custom theta');
-                    }).bind(bouncer);
-                    
-                    if(c===14){
-                        // bouncer.r += level.tileheight;
-                        bouncer.rotation = theta + Math.PI / 2;
-                    } else if(c===15){
-                        // bouncer.r += level.tileheight;
-                        bouncer.rotation = theta + Math.PI;
-                    } else if(c===16){
-                        // bouncer.r += level.tileheight;
-                        bouncer.rotation = theta - Math.PI / 2;
-                    }
-                    this.children.add(bouncer);
-                    this.add.updateList.add(bouncer);
-                } else {
-                    let tile;
-                    if([1,2,5,6].indexOf(c) === -1){
-                        // tile = new PolarSprite(this, theta, - r + groundHeight*level.tileheight, 'sheet', c - 1);
-                        tile = new PolarImage(this, theta, r, 'sheet', c - 1);
-                        this.physics.add(tile);
-                        this.physics.setStatic(tile);
-                        tile.type = 'wall';
+        for(let l=0; l<this.levelNum; l++){
+            let level = this.cache.json.get('level' + (l+1));
+            let groundHeight = level.properties.groundHeight || 1;
+            let angleDelta = (level.tilewidth) / this.planetRadius;
+            let levelConfig = {
+                minTheta: startAngle,
+                bouncers: [],
+                tiles: []
+            };
+            for(let h=0; h<level.height; h++){
+                for(let w=0; w<level.width; w++){
+                    let c = level.layers[0].data[w + h*level.width];
+                    if(!c)
+                        continue;
+                    let r = this.planetRadius + level.tileheight * (level.height - h - .5) - groundHeight*level.tileheight;
+                    let theta = startAngle + angleDelta * w;
+                    if(c===9 || c === 10){
+                        if(c=== 9 && l > 0){
+                            levelConfig.player1 = this.levels[l-1].player2;
+                        } else {
+                            let p = new PolarSprite(this, theta, r, 'orangeman', 10 - c);
+                            // debugger;
+                            p.r += level.tileheight / 4;
+                            console.log('player' + (c - 8), p.r, p.x, p.y)
+                            this.physics.add(p);
+                            p.useGravity = true;
+                            p.friction.theta = .00005;
+                            levelConfig['player' + (c - 8)] = p;
+                            this.physics.disable(p);
+                            this.children.add(p);
+                            p.setVisible(false);
+                        }
+                    } else if(c >= 13 && c <= 16){
+                        let bouncer = new PolarSprite(this, theta, r - level.tileheight, 'bouncer');
+                        bouncer.moveable = true;
+                        bouncer.type = 'bouncer';
+                        bouncer.center = this.center;
+                        this.physics.add(bouncer);
+                        this.physics.setStatic(bouncer);
+                        bouncer.lockRotation = false;
+                        let bigE = 1.2;
+                        let littleE = .5;
+                        let littleDim = level.tileheight / 2 - 15;
+                        let bigDim = level.tilewidth / 2;
+                        if(c===13 || c===15){
+                            bouncer.setSize(bigDim, littleDim);
+                            bouncer.elasticity.r = bigE;
+                            bouncer.elasticity.theta = littleE;
+                            bouncer.lockR = true;
+                        } else if(c===14 || c===16){
+                            bouncer.setSize(littleDim, bigDim);
+                            bouncer.elasticity.theta = bigE;
+                            bouncer.elasticity.r = littleE;
+                            bouncer.lockTheta = true;
+                        }
+                        
+                        bouncer.updatePosition(theta, r);
+                        
+                        bouncer.onCollision = (function(sounds, bouncer){
+                            return function(a){
+                                let v = (Math.abs(a.velocity.r) + Math.abs(a.velocity.theta * a.r)) / 15;
+                                sounds['bounce'].play({
+                                    volume: v > 1 ? 1 : v
+                                });
+                                bouncer.anims.play('bounce');
+                            };
+                        })(this.sounds, bouncer);
+                        
+                        if(c===14){
+                            // bouncer.r += level.tileheight;
+                            bouncer.rotation = theta + Math.PI / 2;
+                        } else if(c===15){
+                            // bouncer.r += level.tileheight;
+                            bouncer.rotation = theta + Math.PI;
+                        } else if(c===16){
+                            // bouncer.r += level.tileheight;
+                            bouncer.rotation = theta - Math.PI / 2;
+                        }
+                        levelConfig.bouncers.push(bouncer);
+                        this.physics.disable(bouncer);
+                        this.children.add(bouncer);
+                        bouncer.setVisible(false);
                     } else {
-                        console.log(theta, r);
-                        tile = new PolarImage(this, theta, r, 'sheet', c - 1);
-                        tile.type = 'ground';
+                        let tile;
+                        if([1,2,5,6].indexOf(c) === -1){
+                            // tile = new PolarSprite(this, theta, - r + groundHeight*level.tileheight, 'sheet', c - 1);
+                            tile = new PolarImage(this, theta, r, 'sheet', c - 1);
+                            tile.type = 'wall';
+                            this.physics.add(tile);
+                            this.physics.setStatic(tile);
+                            this.physics.disable(tile);
+                            levelConfig.tiles.push(tile);
+                        } else {
+                            tile = new PolarImage(this, theta, r, 'sheet', c - 1);
+                            tile.type = 'ground';
+                        }
+                        tile.center = this.center;
+                        tile.updatePosition(theta, r);
+                        // TODO: optimize rendering????
+                        this.children.add(tile);
+                        // tile.rotation = theta;
+                        levelConfig.maxTheta = theta;
+                        // this.physics.add(tile);
+                        // this.tiles.push(tile);
                     }
-                    tile.center = this.center;
-                    tile.updatePosition(theta, r);
-                    this.children.add(tile);
-                    // tile.rotation = theta;
-                    levelConfig.maxTheta = theta;
-                    this.tiles.push(tile);
+                    
                 }
-                
             }
+            this.levels.push(levelConfig);
+            
+            
+            startAngle = levelConfig.maxTheta - angleDelta * 4;
         }
-        this.levels.push(levelConfig);
     }
 
     

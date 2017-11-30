@@ -5,7 +5,7 @@ class PolarSprite extends Phaser.GameObjects.Sprite{
         super(game, 0, 0, cacheKey, frame, config);
         this._r = r;
         this._theta = theta;
-        this._center = {x:0, y:0};
+        this._center = game.center || {x:0, y:0};
         this.lockRotation = true;
         this.updatePosition(theta, r);
     }
