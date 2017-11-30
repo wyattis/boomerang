@@ -10,7 +10,7 @@ class Game extends Phaser.Scene{
     constructor(config={}){
         config.key = 'game';
         super(config);
-        this.levelNum = 2;
+        this.levelNum = 3;
         
     }
     preload(){
@@ -23,7 +23,7 @@ class Game extends Phaser.Scene{
         this.load.image('boomerang', 'assets/images/Boomerarm.png');
         this.load.image('cloud', 'assets/images/cloud.png');
         this.load.spritesheet('orangeman', 'assets/images/orangeman.png', {frameWidth: 49, frameHeight: 52});
-        this.load.spritesheet('sheet', 'assets/images/BoomtilesB.png', {frameWidth: 32, frameHeight: 32});
+        this.load.spritesheet('sheet', 'assets/images/BoomtilesC.png', {frameWidth: 32, frameHeight: 32});
         this.load.spritesheet('bouncer', 'assets/images/Bouncer.png', {frameWidth: 64, frameHeight: 32});
         
         // Audio
@@ -49,6 +49,8 @@ class Game extends Phaser.Scene{
         this.boomerang.center = this.center;
         this.physics.setGravity(this.boomerang);
         this.boomerang.lockRotation = false;
+        this.boomerang.maxVR = 10;
+        this.boomerang.maxVTheta = .01;
         
         this.boomerang.onCollision = (function(sounds, boomerang){
             return function(b){
@@ -391,16 +393,20 @@ class Game extends Phaser.Scene{
         this.boomerang.setActive(true);
         
         this.boomerang.updatePosition(l.player1.theta, l.player1.r);
-        // this.boomerang.r = l.player1.r;
-        // this.boomerang.theta = l.player1.theta;
         this.children.bringToTop(l.player2);
-        // l.player2.updatePosition(l.player1.theta, l.player1.r);
+        this.children.bringToTop(l.player1);
+
         
         dirMag.scale(.02);
         this.boomerang.velocity.theta = dirMag.x / this.boomerang.r;
         this.boomerang.velocity.r = -dirMag.y;
         this.boomerang.velocity.angular = Phaser.Math.Clamp(dirMag.lengthSq() / 40, 0, 15);
+        this.boomerang.acceleration.theta = -this.boomerang.velocity.theta / 40;
+        this.boomerang.acceleration.r = this.boomerang.velocity.r / 30;
         console.log(this.boomerang.x, this.boomerang.y, dirMag.x, dirMag.y);
+        
+        setTimeout(()=>{this.boomerang.acceleration.r=0;this.boomerang.acceleration.theta=0}, 1000);
+        
         // this.boomerang.setdirMagocity(dirMag.x, dirMag.y);
         this.throwCount ++;
         console.log("Throw!");
@@ -443,23 +449,23 @@ class Game extends Phaser.Scene{
                         continue;
                     let r = this.planetRadius + level.tileheight * (level.height - h - .5) - groundHeight*level.tileheight;
                     let theta = startAngle + angleDelta * w;
-                    if(c===9 || c === 10){
-                        if(c=== 9 && l > 0){
+                    if(c===21 || c === 22){
+                        if(c=== 21 && l > 0){
                             levelConfig.player1 = this.levels[l-1].player2;
                         } else {
-                            let p = new PolarSprite(this, theta, r, 'orangeman', 10 - c);
+                            let p = new PolarSprite(this, theta, r, 'orangeman', 22 - c);
                             // debugger;
                             p.r += level.tileheight / 4;
                             console.log('player' + (c - 8), p.r, p.x, p.y)
                             this.physics.add(p);
                             p.useGravity = true;
                             p.friction.theta = .00005;
-                            levelConfig['player' + (c - 8)] = p;
+                            levelConfig['player' + (c - 20)] = p;
                             this.physics.disable(p);
                             this.children.add(p);
                             p.setVisible(false);
                         }
-                    } else if(c >= 13 && c <= 16){
+                    } else if(c >= 17 && c <= 20){
                         let bouncer = new PolarSprite(this, theta, r - level.tileheight, 'bouncer');
                         bouncer.moveable = true;
                         bouncer.type = 'bouncer';
@@ -467,16 +473,16 @@ class Game extends Phaser.Scene{
                         this.physics.add(bouncer);
                         this.physics.setStatic(bouncer);
                         bouncer.lockRotation = false;
-                        let bigE = 1.2;
+                        let bigE = 1.1;
                         let littleE = .5;
                         let littleDim = level.tileheight / 2 - 15;
                         let bigDim = level.tilewidth / 2;
-                        if(c===13 || c===15){
+                        if(c===17 || c===19){
                             bouncer.setSize(bigDim, littleDim);
                             bouncer.elasticity.r = bigE;
                             bouncer.elasticity.theta = littleE;
                             bouncer.lockR = true;
-                        } else if(c===14 || c===16){
+                        } else if(c===18 || c===20){
                             bouncer.setSize(littleDim, bigDim);
                             bouncer.elasticity.theta = bigE;
                             bouncer.elasticity.r = littleE;
@@ -495,13 +501,13 @@ class Game extends Phaser.Scene{
                             };
                         })(this.sounds, bouncer);
                         
-                        if(c===14){
+                        if(c===18){
                             // bouncer.r += level.tileheight;
                             bouncer.rotation = theta + Math.PI / 2;
-                        } else if(c===15){
+                        } else if(c===19){
                             // bouncer.r += level.tileheight;
                             bouncer.rotation = theta + Math.PI;
-                        } else if(c===16){
+                        } else if(c===20){
                             // bouncer.r += level.tileheight;
                             bouncer.rotation = theta - Math.PI / 2;
                         }
@@ -511,7 +517,7 @@ class Game extends Phaser.Scene{
                         bouncer.setVisible(false);
                     } else {
                         let tile;
-                        if([1,2,5,6].indexOf(c) === -1){
+                        if([1,5,9,13].indexOf(c) === -1){
                             // tile = new PolarSprite(this, theta, - r + groundHeight*level.tileheight, 'sheet', c - 1);
                             tile = new PolarImage(this, theta, r, 'sheet', c - 1);
                             tile.type = 'wall';

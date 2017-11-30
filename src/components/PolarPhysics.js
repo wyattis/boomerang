@@ -111,6 +111,13 @@ class PolarPhysics{
                 this.bodies[i].velocity.r += this.gravity.r * delta / 17;
             }
             this.bodies[i].velocity.r += this.bodies[i].acceleration.r * delta / 17;
+            if(this.bodies[i].maxVR){
+                if(this.bodies[i].velocity.r > this.bodies[i].maxVR){
+                    this.bodies[i].velocity.r = this.bodies[i].maxVR;
+                } else if(this.bodies[i].velocity.r < -this.bodies[i].maxVR){
+                    this.bodies[i].velocity.r = -this.bodies[i].maxVR;
+                }
+            }
             if(this.bodies[i].velocity.r > this.rTol){
                 this.bodies[i].velocity.r -= this.bodies[i].friction.r * delta / 17;
             } else if(this.bodies[i].velocity.r < -this.rTol){
@@ -129,6 +136,13 @@ class PolarPhysics{
                 this.bodies[i].velocity.theta += this.gravity.theta * delta / 17;
             }
             this.bodies[i].velocity.theta += this.bodies[i].acceleration.theta * delta / 17;
+            if(this.bodies[i].maxVTheta){
+                if(this.bodies[i].velocity.theta > this.bodies[i].maxVTheta){
+                    this.bodies[i].velocity.theta = this.bodies[i].maxVTheta;
+                } else if(this.bodies[i].velocity.theta < -this.bodies[i].maxVTheta){
+                    this.bodies[i].velocity.theta = -this.bodies[i].maxVTheta;
+                }
+            }
             if(this.bodies[i].velocity.theta > this.thetaTol){
                 this.bodies[i].velocity.theta -= this.bodies[i].friction.theta * delta / 17;
             } else if(this.bodies[i].velocity.theta < -this.thetaTol){

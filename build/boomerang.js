@@ -120,7 +120,7 @@ class Game extends Phaser.Scene{
     constructor(config={}){
         config.key = 'game';
         super(config);
-        this.levelNum = 2;
+        this.levelNum = 3;
         
     }
     preload(){
@@ -133,7 +133,7 @@ class Game extends Phaser.Scene{
         this.load.image('boomerang', 'assets/images/Boomerarm.png');
         this.load.image('cloud', 'assets/images/cloud.png');
         this.load.spritesheet('orangeman', 'assets/images/orangeman.png', {frameWidth: 49, frameHeight: 52});
-        this.load.spritesheet('sheet', 'assets/images/BoomtilesB.png', {frameWidth: 32, frameHeight: 32});
+        this.load.spritesheet('sheet', 'assets/images/BoomtilesC.png', {frameWidth: 32, frameHeight: 32});
         this.load.spritesheet('bouncer', 'assets/images/Bouncer.png', {frameWidth: 64, frameHeight: 32});
         
         // Audio
@@ -159,6 +159,8 @@ class Game extends Phaser.Scene{
         this.boomerang.center = this.center;
         this.physics.setGravity(this.boomerang);
         this.boomerang.lockRotation = false;
+        this.boomerang.maxVR = 10;
+        this.boomerang.maxVTheta = .01;
         
         this.boomerang.onCollision = (function(sounds, boomerang){
             return function(b){
@@ -501,16 +503,20 @@ class Game extends Phaser.Scene{
         this.boomerang.setActive(true);
         
         this.boomerang.updatePosition(l.player1.theta, l.player1.r);
-        // this.boomerang.r = l.player1.r;
-        // this.boomerang.theta = l.player1.theta;
         this.children.bringToTop(l.player2);
-        // l.player2.updatePosition(l.player1.theta, l.player1.r);
+        this.children.bringToTop(l.player1);
+
         
         dirMag.scale(.02);
         this.boomerang.velocity.theta = dirMag.x / this.boomerang.r;
         this.boomerang.velocity.r = -dirMag.y;
         this.boomerang.velocity.angular = Phaser.Math.Clamp(dirMag.lengthSq() / 40, 0, 15);
+        this.boomerang.acceleration.theta = -this.boomerang.velocity.theta / 40;
+        this.boomerang.acceleration.r = this.boomerang.velocity.r / 30;
         console.log(this.boomerang.x, this.boomerang.y, dirMag.x, dirMag.y);
+        
+        setTimeout(()=>{this.boomerang.acceleration.r=0;this.boomerang.acceleration.theta=0}, 1000);
+        
         // this.boomerang.setdirMagocity(dirMag.x, dirMag.y);
         this.throwCount ++;
         console.log("Throw!");
@@ -553,23 +559,23 @@ class Game extends Phaser.Scene{
                         continue;
                     let r = this.planetRadius + level.tileheight * (level.height - h - .5) - groundHeight*level.tileheight;
                     let theta = startAngle + angleDelta * w;
-                    if(c===9 || c === 10){
-                        if(c=== 9 && l > 0){
+                    if(c===21 || c === 22){
+                        if(c=== 21 && l > 0){
                             levelConfig.player1 = this.levels[l-1].player2;
                         } else {
-                            let p = new __WEBPACK_IMPORTED_MODULE_4__components_PolarSprite__["a" /* default */](this, theta, r, 'orangeman', 10 - c);
+                            let p = new __WEBPACK_IMPORTED_MODULE_4__components_PolarSprite__["a" /* default */](this, theta, r, 'orangeman', 22 - c);
                             // debugger;
                             p.r += level.tileheight / 4;
                             console.log('player' + (c - 8), p.r, p.x, p.y)
                             this.physics.add(p);
                             p.useGravity = true;
                             p.friction.theta = .00005;
-                            levelConfig['player' + (c - 8)] = p;
+                            levelConfig['player' + (c - 20)] = p;
                             this.physics.disable(p);
                             this.children.add(p);
                             p.setVisible(false);
                         }
-                    } else if(c >= 13 && c <= 16){
+                    } else if(c >= 17 && c <= 20){
                         let bouncer = new __WEBPACK_IMPORTED_MODULE_4__components_PolarSprite__["a" /* default */](this, theta, r - level.tileheight, 'bouncer');
                         bouncer.moveable = true;
                         bouncer.type = 'bouncer';
@@ -577,16 +583,16 @@ class Game extends Phaser.Scene{
                         this.physics.add(bouncer);
                         this.physics.setStatic(bouncer);
                         bouncer.lockRotation = false;
-                        let bigE = 1.2;
+                        let bigE = 1.1;
                         let littleE = .5;
                         let littleDim = level.tileheight / 2 - 15;
                         let bigDim = level.tilewidth / 2;
-                        if(c===13 || c===15){
+                        if(c===17 || c===19){
                             bouncer.setSize(bigDim, littleDim);
                             bouncer.elasticity.r = bigE;
                             bouncer.elasticity.theta = littleE;
                             bouncer.lockR = true;
-                        } else if(c===14 || c===16){
+                        } else if(c===18 || c===20){
                             bouncer.setSize(littleDim, bigDim);
                             bouncer.elasticity.theta = bigE;
                             bouncer.elasticity.r = littleE;
@@ -605,13 +611,13 @@ class Game extends Phaser.Scene{
                             };
                         })(this.sounds, bouncer);
                         
-                        if(c===14){
+                        if(c===18){
                             // bouncer.r += level.tileheight;
                             bouncer.rotation = theta + Math.PI / 2;
-                        } else if(c===15){
+                        } else if(c===19){
                             // bouncer.r += level.tileheight;
                             bouncer.rotation = theta + Math.PI;
-                        } else if(c===16){
+                        } else if(c===20){
                             // bouncer.r += level.tileheight;
                             bouncer.rotation = theta - Math.PI / 2;
                         }
@@ -621,7 +627,7 @@ class Game extends Phaser.Scene{
                         bouncer.setVisible(false);
                     } else {
                         let tile;
-                        if([1,2,5,6].indexOf(c) === -1){
+                        if([1,5,9,13].indexOf(c) === -1){
                             // tile = new PolarSprite(this, theta, - r + groundHeight*level.tileheight, 'sheet', c - 1);
                             tile = new __WEBPACK_IMPORTED_MODULE_3__components_PolarImage__["a" /* default */](this, theta, r, 'sheet', c - 1);
                             tile.type = 'wall';
@@ -787,17 +793,24 @@ class PolarPhysics{
             // }
             
             if(this.bodies[i].useGravity){
-                this.bodies[i].velocity.r += this.gravity.r * 17 / delta;
+                this.bodies[i].velocity.r += this.gravity.r * delta / 17;
             }
-            this.bodies[i].velocity.r += this.bodies[i].acceleration.r * 17 / delta;
+            this.bodies[i].velocity.r += this.bodies[i].acceleration.r * delta / 17;
+            if(this.bodies[i].maxVR){
+                if(this.bodies[i].velocity.r > this.bodies[i].maxVR){
+                    this.bodies[i].velocity.r = this.bodies[i].maxVR;
+                } else if(this.bodies[i].velocity.r < -this.bodies[i].maxVR){
+                    this.bodies[i].velocity.r = -this.bodies[i].maxVR;
+                }
+            }
             if(this.bodies[i].velocity.r > this.rTol){
-                this.bodies[i].velocity.r -= this.bodies[i].friction.r * 17 / delta;
+                this.bodies[i].velocity.r -= this.bodies[i].friction.r * delta / 17;
             } else if(this.bodies[i].velocity.r < -this.rTol){
-                this.bodies[i].velocity.r += this.bodies[i].friction.r * 17 / delta;
+                this.bodies[i].velocity.r += this.bodies[i].friction.r * delta / 17;
             } else{
                 this.bodies[i].velocity.r = 0;
             }
-            this.bodies[i].r += this.bodies[i].velocity.r * 17 / delta;
+            this.bodies[i].r += this.bodies[i].velocity.r * delta / 17;
             this.radiusCollision(i, delta);
             
            
@@ -805,17 +818,24 @@ class PolarPhysics{
             // Theta
             this.bodies[i].hasCollided = false;
             if(this.bodies[i].useGravity){
-                this.bodies[i].velocity.theta += this.gravity.theta * 17 / delta;
+                this.bodies[i].velocity.theta += this.gravity.theta * delta / 17;
             }
-            this.bodies[i].velocity.theta += this.bodies[i].acceleration.theta * 17 / delta;
+            this.bodies[i].velocity.theta += this.bodies[i].acceleration.theta * delta / 17;
+            if(this.bodies[i].maxVTheta){
+                if(this.bodies[i].velocity.theta > this.bodies[i].maxVTheta){
+                    this.bodies[i].velocity.theta = this.bodies[i].maxVTheta;
+                } else if(this.bodies[i].velocity.theta < -this.bodies[i].maxVTheta){
+                    this.bodies[i].velocity.theta = -this.bodies[i].maxVTheta;
+                }
+            }
             if(this.bodies[i].velocity.theta > this.thetaTol){
-                this.bodies[i].velocity.theta -= this.bodies[i].friction.theta * 17 / delta;
+                this.bodies[i].velocity.theta -= this.bodies[i].friction.theta * delta / 17;
             } else if(this.bodies[i].velocity.theta < -this.thetaTol){
-                this.bodies[i].velocity.theta += this.bodies[i].friction.theta * 17 / delta;
+                this.bodies[i].velocity.theta += this.bodies[i].friction.theta * delta / 17;
             } else{
                 this.bodies[i].velocity.theta = 0;
             }
-            this.bodies[i].theta += this.bodies[i].velocity.theta * 17 / delta;
+            this.bodies[i].theta += this.bodies[i].velocity.theta * delta / 17;
             this.thetaCollision(i, delta);
             
             
@@ -842,15 +862,15 @@ class PolarPhysics{
             
             // Rotation
             if(!this.bodies[i].lockRotation){
-                this.bodies[i].velocity.angular += this.bodies[i].acceleration.angular * 17 / delta;
+                this.bodies[i].velocity.angular += this.bodies[i].acceleration.angular * delta / 17;
                 if(this.bodies[i].velocity.angular > this.angularTol){
-                    this.bodies[i].velocity.angular -= this.bodies[i].friction.angular * 17 / delta;
+                    this.bodies[i].velocity.angular -= this.bodies[i].friction.angular * delta / 17;
                 } else if(this.bodies[i].velocity.angular < -this.angularTol){
-                    this.bodies[i].velocity.angular += this.bodies[i].friction.angular * 17 / delta;
+                    this.bodies[i].velocity.angular += this.bodies[i].friction.angular * delta / 17;
                 } else{
                     this.bodies[i].velocity.angular = 0;
                 }
-                this.bodies[i].rotation += this.bodies[i].velocity.angular * 17 / delta;
+                this.bodies[i].rotation += this.bodies[i].velocity.angular * delta / 17;
             }
             
         }
@@ -884,11 +904,11 @@ class PolarPhysics{
                         }
                         if(b.isStatic){
                             a.theta -= a.velocity.theta;
-                            a.velocity.theta *= -b.elasticity.theta * 17 / delta;
+                            a.velocity.theta *= -b.elasticity.theta * delta / 17;
                         } else {
                             // debugger;
                             b.theta -= b.velocity.theta;
-                            b.velocity.theta *= -a.elasticity.theta * 17 / delta;
+                            b.velocity.theta *= -a.elasticity.theta * delta / 17;
                         }
                     }
                 }
@@ -913,10 +933,10 @@ class PolarPhysics{
                         }
                         if(b.isStatic){
                             a.r -= a.velocity.r;
-                            a.velocity.r *= -b.elasticity.r * 17 / delta;
+                            a.velocity.r *= -b.elasticity.r * delta / 17;
                         } else {
                             b.r -= b.velocity.r;
-                            b.velocity.r *= -a.elasticity.r * 17 / delta;
+                            b.velocity.r *= -a.elasticity.r * delta / 17;
                         }
                     }
                 }
