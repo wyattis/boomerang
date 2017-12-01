@@ -77,9 +77,13 @@ module.exports = Phaser;
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_phaser__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__scenes_Game__ = __webpack_require__(2);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__scenes_Menu__ = __webpack_require__(7);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__scenes_Overlay__ = __webpack_require__(8);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__scenes_DropScreen__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__scenes_Loading__ = __webpack_require__(3);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__scenes_Game__ = __webpack_require__(4);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__scenes_Menu__ = __webpack_require__(9);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__scenes_Overlay__ = __webpack_require__(10);
+
+
 
 
 
@@ -90,12 +94,12 @@ var config = {
     backgroundColor: "#4488AA",
     width: 900,
     height: 600,
-    scene: [__WEBPACK_IMPORTED_MODULE_1__scenes_Game__["a" /* default */], __WEBPACK_IMPORTED_MODULE_3__scenes_Overlay__["a" /* default */], __WEBPACK_IMPORTED_MODULE_2__scenes_Menu__["a" /* default */]]
+    scene: [__WEBPACK_IMPORTED_MODULE_1__scenes_DropScreen__["a" /* default */], __WEBPACK_IMPORTED_MODULE_2__scenes_Loading__["a" /* default */], __WEBPACK_IMPORTED_MODULE_3__scenes_Game__["a" /* default */], __WEBPACK_IMPORTED_MODULE_5__scenes_Overlay__["a" /* default */], __WEBPACK_IMPORTED_MODULE_4__scenes_Menu__["a" /* default */]]
 };
 
 
 const game = new Phaser.Game(config);
-game.scene.start('game');
+game.scene.start('drop');
 
 /***/ }),
 /* 2 */
@@ -104,32 +108,45 @@ game.scene.start('game');
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_phaser__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__ui_Arrow__ = __webpack_require__(3);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__components_PolarPhysics__ = __webpack_require__(4);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__components_PolarImage__ = __webpack_require__(5);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__components_PolarSprite__ = __webpack_require__(6);
-/*global Phaser*/
 
-
-
-
-
-
-
-class Game extends Phaser.Scene{
+class DropScreen extends Phaser.Scene{
     constructor(config={}){
-        config.key = 'game';
+        config.key = 'drop';
         super(config);
-        this.levelNum = 3;
-        
     }
     preload(){
+        this.load.image('play3', 'assets/images/Play3.png');
+    }
+    create(){
+        this.scene.start('loading');
+    }
+}
+/* harmony default export */ __webpack_exports__["a"] = (DropScreen);
+
+/***/ }),
+/* 3 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_phaser__);
+/*global Phaser*/
+
+class Loading extends Phaser.Scene{
+    constructor(config={}){
+        config.key = 'loading';
+        super(config);
+        this.levelNum = 23;
+    }
+    preload(){
+        
         // Levels
         for(let l=1; l<=this.levelNum; l++){
             this.load.json('level'+l, `assets/levels/world1/level${l}.json`);
         }
         
         // Sprites
+        this.load.image('arrow', 'assets/images/ARROW.png');
         this.load.image('boomerang', 'assets/images/Boomerarm.png');
         this.load.image('cloud', 'assets/images/cloud.png');
         this.load.spritesheet('orangeman', 'assets/images/orangeman.png', {frameWidth: 49, frameHeight: 52});
@@ -144,12 +161,77 @@ class Game extends Phaser.Scene{
         this.load.audio('throw', 'assets/audio/throw.wav');
         this.load.audio('collision', 'assets/audio/collision.wav');
         
+        
+        this.loader = this.add.image(this.game.config.width / 2, this.game.config.height / 2, 'play3');
+        this.tweens.add({
+            targets: this.loader,
+            rotation: Math.PI * 20,
+            duration: 30000
+        });
     }
+    create(){
+        this.scene.start('game');
+    }
+
+}
+
+/* harmony default export */ __webpack_exports__["a"] = (Loading);
+
+/***/ }),
+/* 4 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_phaser__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__ui_Arrow__ = __webpack_require__(5);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__components_PolarPhysics__ = __webpack_require__(6);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__components_PolarImage__ = __webpack_require__(7);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__components_PolarSprite__ = __webpack_require__(8);
+/*global Phaser*/
+
+
+
+
+
+
+
+class Game extends Phaser.Scene{
+    constructor(config={}){
+        config.key = 'game';
+        super(config);
+        this.levelNum = 23;
+        
+    }
+    preload(){
+        // Levels
+        for(let l=1; l<=this.levelNum; l++){
+            this.load.json('level'+l, `assets/levels/world1/level${l}.json`);
+        }
+        
+        // Sprites
+        this.load.image('arrow', 'assets/images/ARROW.png');
+        this.load.image('boomerang', 'assets/images/Boomerarm.png');
+        this.load.image('cloud', 'assets/images/cloud.png');
+        this.load.spritesheet('orangeman', 'assets/images/orangeman.png', {frameWidth: 49, frameHeight: 52});
+        this.load.spritesheet('sheet', 'assets/images/BoomtilesC.png', {frameWidth: 32, frameHeight: 32});
+        this.load.spritesheet('bouncer', 'assets/images/Bouncer.png', {frameWidth: 64, frameHeight: 32});
+        
+        // Audio
+        this.load.audio('boomerinair', 'assets/audio/boomerinair4.wav');
+        this.load.audio('boomerinair2', 'assets/audio/boomerinair3.wav');
+        this.load.audio('bounce', 'assets/audio/bounce.wav');
+        this.load.audio('crash', 'assets/audio/crash.wav');
+        this.load.audio('throw', 'assets/audio/throw.wav');
+        this.load.audio('collision', 'assets/audio/collision.wav');
+    }
+    
     create(){
         
         this.sounds = {};
         this.physics = new __WEBPACK_IMPORTED_MODULE_2__components_PolarPhysics__["a" /* default */](this);
-        this.planetRadius = 3500;
+        // this.planetRadius = 2500;
+        this.planetRadius = 26 * 22 * 32 / (2 * Math.PI);
         this.physics.setBounds(this.planetRadius, this.planetRadius + this.game.config.height);
         this.physics.gravity.r = -.1;
         this.bounds = {x:0,y:0,width:this.planetRadius*2 + this.game.config.height,height:this.planetRadius*2 + this.game.config.width};
@@ -161,7 +243,6 @@ class Game extends Phaser.Scene{
         this.boomerang.lockRotation = false;
         this.boomerang.maxVR = 10;
         this.boomerang.maxVTheta = .01;
-        
         this.boomerang.onCollision = (function(sounds, boomerang){
             return function(b){
                 if(b.type === 'wall'){
@@ -185,9 +266,14 @@ class Game extends Phaser.Scene{
             repeat: 0
         };
         this.anims.create(config);
-
         
-        // this.arrow = new Arrow(this, 0, 0);
+        
+        
+        this.arrow = this.add.image(0, 0, 'arrow');
+        this.children.add(this.arrow);
+        this.arrow.setVisible(false);
+        this.arrow.setOrigin(.5, 1.5);
+        this.arrowV = new Phaser.Math.Vector2(0, 0);
 
         // this.planet = this.game.add.sprite(400, 1000, 'circle');
         let planetGraphics =  this.make.graphics({x: 0, y: 0, add: false});
@@ -204,7 +290,7 @@ class Game extends Phaser.Scene{
         this.centerOnPoint(this.center, 1000, .07, () => {this.scene.launch('menu')});
         this.makeClouds(40, -200, 300);
         this.level = 0;
-
+        
         this.createAudio();
         this.createInput();
         this.createLevels();
@@ -228,12 +314,9 @@ class Game extends Phaser.Scene{
         this.input.events.on('POINTER_MOVE_EVENT', this.pointerMove.bind(this));
         this.input.events.on('POINTER_UP_EVENT', this.pointerUp.bind(this));
         
-        this.input.keyboard.events.on('KEY_DOWN_A', this.left.bind(this));
-        this.input.keyboard.events.on('KEY_DOWN_D', this.right.bind(this));
-        this.input.keyboard.events.on('KEY_DOWN_W', this.startJump.bind(this));
-        this.input.keyboard.events.on('KEY_UP_W', this.stopJump.bind(this));
-        this.input.keyboard.events.on('KEY_DOWN_SPACEBAR', this.startJump.bind(this));
-        this.input.keyboard.events.on('KEY_UP_SPACEBAR', this.startJump.bind(this));
+        // this.input.keyboard.events.on('KEY_UP_A', this.left.bind(this));
+        this.input.keyboard.events.on('KEY_UP_D', this.right.bind(this));
+
         
         // Input stuff
         this.pointerIsDown = false;
@@ -253,12 +336,12 @@ class Game extends Phaser.Scene{
         this.levels[this.level].player1.acceleration.r = 0;
     }
     
-    left(){
-        this.levels[this.level].player1.velocity.theta = -0.001;
+    right(){
+        // this.next();
     }
     
-    right(){
-        this.levels[this.level].player1.velocity.theta = 0.001;
+    win(){
+        this.onPause();
     }
     
     makeClouds(n, rMin, rMax){
@@ -276,6 +359,7 @@ class Game extends Phaser.Scene{
     onPause(e){
         this.physics.pause();
         this.animatePause();
+        this.disableLevelPhysics();
         this.scene.launch('menu');
     }
 
@@ -290,6 +374,13 @@ class Game extends Phaser.Scene{
             this.startDrag.x = event.x;
             this.startDrag.y = event.y;
             this.pointerIsDown = true;
+            this.arrow.setVisible(true);
+            this.children.bringToTop(this.arrow);
+            this.arrow.x = l.player1.x;
+            this.arrow.y = l.player1.y;
+            this.arrowV.x = 0;
+            this.arrowV.y = 0;
+            this.arrow.setScale(1, .5);
         }
     }
     
@@ -305,6 +396,14 @@ class Game extends Phaser.Scene{
         }
         if(this.pointerIsDown){
             // TODO: Update an arrow on the screen
+            const dx = event.x - this.startDrag.x;
+            const dy = event.y - this.startDrag.y;
+            let magSq = dx*dx + dy*dy;
+            let arrowMag = magSq / 50000 + .5;
+            this.arrowV.x = dx;
+            this.arrowV.y = dy;
+            this.arrow.rotation = this.arrowV.angle() + Math.PI / 2 - this.cameras.main.rotation;
+            this.arrow.setScale(1, arrowMag > 4 ? 4 : arrowMag);
         }
     }
     
@@ -332,8 +431,7 @@ class Game extends Phaser.Scene{
             this.endDrag.x = event.x;
             this.endDrag.y = event.y;
             this.pointerIsDown = false;
-            // let v = {x: this.endDrag.x - this.startDrag.x, y: this.endDrag.y - this.startDrag.y};
-            // debugger;
+            this.arrow.setVisible(false);
             let v = new Phaser.Math.Vector2(this.endDrag.x-this.startDrag.x, this.endDrag.y-this.startDrag.y);
             if(v.lengthSq() >= 20*20){
                 this.throw(v);
@@ -394,27 +492,31 @@ class Game extends Phaser.Scene{
     }
     
     zoomToLevel(duration=2500){
-        this.boomerang.setVisible(true);
         this.enableLevelPhysics();
+        this.boomerang.setVisible(true);
         let lev = this.levels[this.level];
         let middleTheta = (lev.minTheta + lev.maxTheta) /2;
-        let center = {x: this.center.x + this.planetRadius * Math.sin(middleTheta), y: this.center.y - this.planetRadius * Math.cos(middleTheta) };
+        let r = this.planetRadius + 200;
+        let center = {x: this.center.x + r * Math.sin(middleTheta), y: this.center.y - r * Math.cos(middleTheta) };
         this.tweens.add({
             targets: this.cameras.main,
             props: {
                 scrollX:  {
                     value: center.x - this.cameras.main.width * 0.5,
+                    // value: center.x + 100 * Math.sin(this.cameras.main.rotation) - this.cameras.main.width * 0.5,
                     duration: duration / 2
                 },
                 scrollY:  {
-                    value: center.y - this.cameras.main.width * 0.5,
+                    // value: center.y - this.cameras.main.height * 0.5,
+                    value: center.y - this.cameras.main.height * 0.5,
+                    // value: center.y - 100 * Math.cos(this.cameras.main.rotation) - this.cameras.main.rotation * 0.5,
                     duration: duration / 2
                 },
                 rotation: {
                     value: -middleTheta,
                     duration: duration / 2
                 },
-                zoom: 1
+                zoom: .9
             },
             duration: duration,
             ease: 'Cubic.easeInOut',
@@ -511,11 +613,11 @@ class Game extends Phaser.Scene{
         this.boomerang.velocity.theta = dirMag.x / this.boomerang.r;
         this.boomerang.velocity.r = -dirMag.y;
         this.boomerang.velocity.angular = Phaser.Math.Clamp(dirMag.lengthSq() / 40, 0, 15);
-        this.boomerang.acceleration.theta = -this.boomerang.velocity.theta / 40;
-        this.boomerang.acceleration.r = this.boomerang.velocity.r / 30;
+        // this.boomerang.acceleration.theta = -this.boomerang.velocity.theta / 40;
+        // this.boomerang.acceleration.r = this.boomerang.velocity.r / 30;
         console.log(this.boomerang.x, this.boomerang.y, dirMag.x, dirMag.y);
         
-        setTimeout(()=>{this.boomerang.acceleration.r=0;this.boomerang.acceleration.theta=0}, 1000);
+        // setTimeout(()=>{this.boomerang.acceleration.r=0;this.boomerang.acceleration.theta=0}, 1000);
         
         // this.boomerang.setdirMagocity(dirMag.x, dirMag.y);
         this.throwCount ++;
@@ -534,9 +636,11 @@ class Game extends Phaser.Scene{
         this.disableLevelPhysics();
         this.level += 1;
         if(this.level >= this.levels.length){
+            this.win();
             this.level = 0;
+        } else {
+            this.zoomToLevel();
         }
-        this.zoomToLevel();
     }
     
     createLevels(){
@@ -545,7 +649,10 @@ class Game extends Phaser.Scene{
         this.levels = [];
         for(let l=0; l<this.levelNum; l++){
             let level = this.cache.json.get('level' + (l+1));
-            let groundHeight = level.properties.groundHeight || 1;
+            let groundHeight = 1;
+            if(level.properties && level.properties.groundHeight){
+                groundHeight = level.properties.groundHeight;
+            }
             let angleDelta = (level.tilewidth) / this.planetRadius;
             let levelConfig = {
                 minTheta: startAngle,
@@ -555,7 +662,7 @@ class Game extends Phaser.Scene{
             for(let h=0; h<level.height; h++){
                 for(let w=0; w<level.width; w++){
                     let c = level.layers[0].data[w + h*level.width];
-                    if(!c)
+                    if(!c || [3,4,5,7,8,9,11,12,14,15,16,17,18,19,20,21,22].indexOf(c) === -1)
                         continue;
                     let r = this.planetRadius + level.tileheight * (level.height - h - .5) - groundHeight*level.tileheight;
                     let theta = startAngle + angleDelta * w;
@@ -565,6 +672,7 @@ class Game extends Phaser.Scene{
                         } else {
                             let p = new __WEBPACK_IMPORTED_MODULE_4__components_PolarSprite__["a" /* default */](this, theta, r, 'orangeman', 22 - c);
                             // debugger;
+                            p.setSize(32, 64);
                             p.r += level.tileheight / 4;
                             console.log('player' + (c - 8), p.r, p.x, p.y)
                             this.physics.add(p);
@@ -654,7 +762,7 @@ class Game extends Phaser.Scene{
             this.levels.push(levelConfig);
             
             
-            startAngle = levelConfig.maxTheta - angleDelta * 4;
+            startAngle = levelConfig.maxTheta - angleDelta * 3;
         }
     }
 
@@ -664,7 +772,7 @@ class Game extends Phaser.Scene{
 /* harmony default export */ __webpack_exports__["a"] = (Game);
 
 /***/ }),
-/* 3 */
+/* 5 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -679,7 +787,7 @@ class Arrow extends Phaser.GameObjects.Graphics{
 /* unused harmony default export */ var _unused_webpack_default_export = (Arrow);
 
 /***/ }),
-/* 4 */
+/* 6 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -978,189 +1086,189 @@ class PolarPhysics{
 /* harmony default export */ __webpack_exports__["a"] = (PolarPhysics);
 
 /***/ }),
-/* 5 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_phaser__);
-
-
-class PolarSprite extends Phaser.GameObjects.Sprite{
-    constructor(game, theta, r, cacheKey, frame, config){
-        super(game, 0, 0, cacheKey, frame, config);
-        this._r = r;
-        this._theta = theta;
-        this._center = game.center || {x:0, y:0};
-        this.lockRotation = true;
-        this.updatePosition(theta, r);
-    }
-    
-    updatePosition(theta, r){
-        this.r = r;
-        this.theta = theta;
-    }
-    
-    get left(){
-        return this._left;
-    }
-    
-    get right(){
-        return this._right;
-    }
-    
-    get top(){
-        return this._top;
-    }
-    
-    get bottom(){
-        return this._bottom;
-    }
-    
-    set center(c){
-        this._center = c;
-    }
-    
-    get center(){
-        return this._center;
-    }
-    
-    set r(r){
-        this._r = r;
-        this._bottom = r - this.height * this.originY;
-        this._top = r + this.height * this.originY;
-        this.updateCartesian();
-    }
-    
-    set theta(theta){
-        if(theta > 2*Math.PI){
-            // debugger;
-            this._theta = theta - 2 * Math.PI;
-        } else if(theta < 0){
-            // debugger;
-            this._theta = 2*Math.PI - theta;
-        } else {
-            this._theta = theta;
-        }
-        this._left = this._theta - (this.width * this.originX) / this.r;
-        this._right = this._theta + (this.width * this.originX) / this.r;
-        if(this.lockRotation){
-            this.setRotation(this._theta);
-        }
-        this.updateCartesian();
-    }
-    
-    updateCartesian(){
-        this.x = this._center.x + this._r * Math.sin(this._theta);
-        this.y = this._center.y - this._r * Math.cos(this._theta);
-    }
-    
-    get r(){
-        return this._r;
-    }
-    
-    get theta(){
-        return this._theta;
-    }
-    
-}
-
-
-/* harmony default export */ __webpack_exports__["a"] = (PolarSprite);
-
-/***/ }),
-/* 6 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_phaser__);
-
-
-class PolarSprite extends Phaser.GameObjects.Sprite{
-    constructor(game, theta, r, cacheKey, frame, config){
-        super(game, 0, 0, cacheKey, frame, config);
-        this._r = r;
-        this._theta = theta;
-        this._center = game.center || {x:0, y:0};
-        this.lockRotation = true;
-        this.updatePosition(theta, r);
-    }
-    
-    updatePosition(theta, r){
-        this.r = r;
-        this.theta = theta;
-    }
-    
-    get left(){
-        return this._left;
-    }
-    
-    get right(){
-        return this._right;
-    }
-    
-    get top(){
-        return this._top;
-    }
-    
-    get bottom(){
-        return this._bottom;
-    }
-    
-    set center(c){
-        this._center = c;
-    }
-    
-    get center(){
-        return this._center;
-    }
-    
-    set r(r){
-        this._r = r;
-        this._bottom = r - this.height * this.originY;
-        this._top = r + this.height * this.originY;
-        this.updateCartesian();
-    }
-    
-    set theta(theta){
-        if(theta > 2*Math.PI){
-            // debugger;
-            this._theta = theta - 2 * Math.PI;
-        } else if(theta < 0){
-            // debugger;
-            this._theta = 2*Math.PI - theta;
-        } else {
-            this._theta = theta;
-        }
-        this._left = this._theta - (this.width * this.originX) / this.r;
-        this._right = this._theta + (this.width * this.originX) / this.r;
-        if(this.lockRotation){
-            this.setRotation(this._theta);
-        }
-        this.updateCartesian();
-    }
-    
-    updateCartesian(){
-        this.x = this._center.x + this._r * Math.sin(this._theta);
-        this.y = this._center.y - this._r * Math.cos(this._theta);
-    }
-    
-    get r(){
-        return this._r;
-    }
-    
-    get theta(){
-        return this._theta;
-    }
-    
-}
-
-
-/* harmony default export */ __webpack_exports__["a"] = (PolarSprite);
-
-/***/ }),
 /* 7 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_phaser__);
+
+
+class PolarSprite extends Phaser.GameObjects.Sprite{
+    constructor(game, theta, r, cacheKey, frame, config){
+        super(game, 0, 0, cacheKey, frame, config);
+        this._r = r;
+        this._theta = theta;
+        this._center = game.center || {x:0, y:0};
+        this.lockRotation = true;
+        this.updatePosition(theta, r);
+    }
+    
+    updatePosition(theta, r){
+        this.r = r;
+        this.theta = theta;
+    }
+    
+    get left(){
+        return this._left;
+    }
+    
+    get right(){
+        return this._right;
+    }
+    
+    get top(){
+        return this._top;
+    }
+    
+    get bottom(){
+        return this._bottom;
+    }
+    
+    set center(c){
+        this._center = c;
+    }
+    
+    get center(){
+        return this._center;
+    }
+    
+    set r(r){
+        this._r = r;
+        this._bottom = r - this.height * this.originY;
+        this._top = r + this.height * this.originY;
+        this.updateCartesian();
+    }
+    
+    set theta(theta){
+        if(theta > 2*Math.PI){
+            // debugger;
+            this._theta = theta - 2 * Math.PI;
+        } else if(theta < 0){
+            // debugger;
+            this._theta = 2*Math.PI - theta;
+        } else {
+            this._theta = theta;
+        }
+        this._left = this._theta - (this.width * this.originX) / this.r;
+        this._right = this._theta + (this.width * this.originX) / this.r;
+        if(this.lockRotation){
+            this.setRotation(this._theta);
+        }
+        this.updateCartesian();
+    }
+    
+    updateCartesian(){
+        this.x = this._center.x + this._r * Math.sin(this._theta);
+        this.y = this._center.y - this._r * Math.cos(this._theta);
+    }
+    
+    get r(){
+        return this._r;
+    }
+    
+    get theta(){
+        return this._theta;
+    }
+    
+}
+
+
+/* harmony default export */ __webpack_exports__["a"] = (PolarSprite);
+
+/***/ }),
+/* 8 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_phaser___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_phaser__);
+
+
+class PolarSprite extends Phaser.GameObjects.Sprite{
+    constructor(game, theta, r, cacheKey, frame, config){
+        super(game, 0, 0, cacheKey, frame, config);
+        this._r = r;
+        this._theta = theta;
+        this._center = game.center || {x:0, y:0};
+        this.lockRotation = true;
+        this.updatePosition(theta, r);
+    }
+    
+    updatePosition(theta, r){
+        this.r = r;
+        this.theta = theta;
+    }
+    
+    get left(){
+        return this._left;
+    }
+    
+    get right(){
+        return this._right;
+    }
+    
+    get top(){
+        return this._top;
+    }
+    
+    get bottom(){
+        return this._bottom;
+    }
+    
+    set center(c){
+        this._center = c;
+    }
+    
+    get center(){
+        return this._center;
+    }
+    
+    set r(r){
+        this._r = r;
+        this._bottom = r - this.height * this.originY;
+        this._top = r + this.height * this.originY;
+        this.updateCartesian();
+    }
+    
+    set theta(theta){
+        if(theta > 2*Math.PI){
+            // debugger;
+            this._theta = theta - 2 * Math.PI;
+        } else if(theta < 0){
+            // debugger;
+            this._theta = 2*Math.PI - theta;
+        } else {
+            this._theta = theta;
+        }
+        this._left = this._theta - (this.width * this.originX) / this.r;
+        this._right = this._theta + (this.width * this.originX) / this.r;
+        if(this.lockRotation){
+            this.setRotation(this._theta);
+        }
+        this.updateCartesian();
+    }
+    
+    updateCartesian(){
+        this.x = this._center.x + this._r * Math.sin(this._theta);
+        this.y = this._center.y - this._r * Math.cos(this._theta);
+    }
+    
+    get r(){
+        return this._r;
+    }
+    
+    get theta(){
+        return this._theta;
+    }
+    
+}
+
+
+/* harmony default export */ __webpack_exports__["a"] = (PolarSprite);
+
+/***/ }),
+/* 9 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -1204,7 +1312,7 @@ class Menu extends Phaser.Scene{
 /* harmony default export */ __webpack_exports__["a"] = (Menu);
 
 /***/ }),
-/* 8 */
+/* 10 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";

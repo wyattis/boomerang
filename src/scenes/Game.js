@@ -10,7 +10,7 @@ class Game extends Phaser.Scene{
     constructor(config={}){
         config.key = 'game';
         super(config);
-        this.levelNum = 3;
+        this.levelNum = 23;
         
     }
     preload(){
@@ -20,6 +20,7 @@ class Game extends Phaser.Scene{
         }
         
         // Sprites
+        this.load.image('arrow', 'assets/images/ARROW.png');
         this.load.image('boomerang', 'assets/images/Boomerarm.png');
         this.load.image('cloud', 'assets/images/cloud.png');
         this.load.spritesheet('orangeman', 'assets/images/orangeman.png', {frameWidth: 49, frameHeight: 52});
@@ -33,13 +34,14 @@ class Game extends Phaser.Scene{
         this.load.audio('crash', 'assets/audio/crash.wav');
         this.load.audio('throw', 'assets/audio/throw.wav');
         this.load.audio('collision', 'assets/audio/collision.wav');
-        
     }
+    
     create(){
         
         this.sounds = {};
         this.physics = new PolarPhysics(this);
-        this.planetRadius = 3500;
+        // this.planetRadius = 2500;
+        this.planetRadius = 26 * 22 * 32 / (2 * Math.PI);
         this.physics.setBounds(this.planetRadius, this.planetRadius + this.game.config.height);
         this.physics.gravity.r = -.1;
         this.bounds = {x:0,y:0,width:this.planetRadius*2 + this.game.config.height,height:this.planetRadius*2 + this.game.config.width};
@@ -51,7 +53,6 @@ class Game extends Phaser.Scene{
         this.boomerang.lockRotation = false;
         this.boomerang.maxVR = 10;
         this.boomerang.maxVTheta = .01;
-        
         this.boomerang.onCollision = (function(sounds, boomerang){
             return function(b){
                 if(b.type === 'wall'){
@@ -75,9 +76,14 @@ class Game extends Phaser.Scene{
             repeat: 0
         };
         this.anims.create(config);
-
         
-        // this.arrow = new Arrow(this, 0, 0);
+        
+        
+        this.arrow = this.add.image(0, 0, 'arrow');
+        this.children.add(this.arrow);
+        this.arrow.setVisible(false);
+        this.arrow.setOrigin(.5, 1.5);
+        this.arrowV = new Phaser.Math.Vector2(0, 0);
 
         // this.planet = this.game.add.sprite(400, 1000, 'circle');
         let planetGraphics =  this.make.graphics({x: 0, y: 0, add: false});
@@ -94,7 +100,7 @@ class Game extends Phaser.Scene{
         this.centerOnPoint(this.center, 1000, .07, () => {this.scene.launch('menu')});
         this.makeClouds(40, -200, 300);
         this.level = 0;
-
+        
         this.createAudio();
         this.createInput();
         this.createLevels();
@@ -118,12 +124,9 @@ class Game extends Phaser.Scene{
         this.input.events.on('POINTER_MOVE_EVENT', this.pointerMove.bind(this));
         this.input.events.on('POINTER_UP_EVENT', this.pointerUp.bind(this));
         
-        this.input.keyboard.events.on('KEY_DOWN_A', this.left.bind(this));
-        this.input.keyboard.events.on('KEY_DOWN_D', this.right.bind(this));
-        this.input.keyboard.events.on('KEY_DOWN_W', this.startJump.bind(this));
-        this.input.keyboard.events.on('KEY_UP_W', this.stopJump.bind(this));
-        this.input.keyboard.events.on('KEY_DOWN_SPACEBAR', this.startJump.bind(this));
-        this.input.keyboard.events.on('KEY_UP_SPACEBAR', this.startJump.bind(this));
+        // this.input.keyboard.events.on('KEY_UP_A', this.left.bind(this));
+        this.input.keyboard.events.on('KEY_UP_D', this.right.bind(this));
+
         
         // Input stuff
         this.pointerIsDown = false;
@@ -143,12 +146,12 @@ class Game extends Phaser.Scene{
         this.levels[this.level].player1.acceleration.r = 0;
     }
     
-    left(){
-        this.levels[this.level].player1.velocity.theta = -0.001;
+    right(){
+        // this.next();
     }
     
-    right(){
-        this.levels[this.level].player1.velocity.theta = 0.001;
+    win(){
+        this.onPause();
     }
     
     makeClouds(n, rMin, rMax){
@@ -166,6 +169,7 @@ class Game extends Phaser.Scene{
     onPause(e){
         this.physics.pause();
         this.animatePause();
+        this.disableLevelPhysics();
         this.scene.launch('menu');
     }
 
@@ -180,6 +184,13 @@ class Game extends Phaser.Scene{
             this.startDrag.x = event.x;
             this.startDrag.y = event.y;
             this.pointerIsDown = true;
+            this.arrow.setVisible(true);
+            this.children.bringToTop(this.arrow);
+            this.arrow.x = l.player1.x;
+            this.arrow.y = l.player1.y;
+            this.arrowV.x = 0;
+            this.arrowV.y = 0;
+            this.arrow.setScale(1, .5);
         }
     }
     
@@ -195,6 +206,14 @@ class Game extends Phaser.Scene{
         }
         if(this.pointerIsDown){
             // TODO: Update an arrow on the screen
+            const dx = event.x - this.startDrag.x;
+            const dy = event.y - this.startDrag.y;
+            let magSq = dx*dx + dy*dy;
+            let arrowMag = magSq / 50000 + .5;
+            this.arrowV.x = dx;
+            this.arrowV.y = dy;
+            this.arrow.rotation = this.arrowV.angle() + Math.PI / 2 - this.cameras.main.rotation;
+            this.arrow.setScale(1, arrowMag > 4 ? 4 : arrowMag);
         }
     }
     
@@ -222,8 +241,7 @@ class Game extends Phaser.Scene{
             this.endDrag.x = event.x;
             this.endDrag.y = event.y;
             this.pointerIsDown = false;
-            // let v = {x: this.endDrag.x - this.startDrag.x, y: this.endDrag.y - this.startDrag.y};
-            // debugger;
+            this.arrow.setVisible(false);
             let v = new Phaser.Math.Vector2(this.endDrag.x-this.startDrag.x, this.endDrag.y-this.startDrag.y);
             if(v.lengthSq() >= 20*20){
                 this.throw(v);
@@ -284,27 +302,31 @@ class Game extends Phaser.Scene{
     }
     
     zoomToLevel(duration=2500){
-        this.boomerang.setVisible(true);
         this.enableLevelPhysics();
+        this.boomerang.setVisible(true);
         let lev = this.levels[this.level];
         let middleTheta = (lev.minTheta + lev.maxTheta) /2;
-        let center = {x: this.center.x + this.planetRadius * Math.sin(middleTheta), y: this.center.y - this.planetRadius * Math.cos(middleTheta) };
+        let r = this.planetRadius + 200;
+        let center = {x: this.center.x + r * Math.sin(middleTheta), y: this.center.y - r * Math.cos(middleTheta) };
         this.tweens.add({
             targets: this.cameras.main,
             props: {
                 scrollX:  {
                     value: center.x - this.cameras.main.width * 0.5,
+                    // value: center.x + 100 * Math.sin(this.cameras.main.rotation) - this.cameras.main.width * 0.5,
                     duration: duration / 2
                 },
                 scrollY:  {
-                    value: center.y - this.cameras.main.width * 0.5,
+                    // value: center.y - this.cameras.main.height * 0.5,
+                    value: center.y - this.cameras.main.height * 0.5,
+                    // value: center.y - 100 * Math.cos(this.cameras.main.rotation) - this.cameras.main.rotation * 0.5,
                     duration: duration / 2
                 },
                 rotation: {
                     value: -middleTheta,
                     duration: duration / 2
                 },
-                zoom: 1
+                zoom: .9
             },
             duration: duration,
             ease: 'Cubic.easeInOut',
@@ -401,11 +423,11 @@ class Game extends Phaser.Scene{
         this.boomerang.velocity.theta = dirMag.x / this.boomerang.r;
         this.boomerang.velocity.r = -dirMag.y;
         this.boomerang.velocity.angular = Phaser.Math.Clamp(dirMag.lengthSq() / 40, 0, 15);
-        this.boomerang.acceleration.theta = -this.boomerang.velocity.theta / 40;
-        this.boomerang.acceleration.r = this.boomerang.velocity.r / 30;
+        // this.boomerang.acceleration.theta = -this.boomerang.velocity.theta / 40;
+        // this.boomerang.acceleration.r = this.boomerang.velocity.r / 30;
         console.log(this.boomerang.x, this.boomerang.y, dirMag.x, dirMag.y);
         
-        setTimeout(()=>{this.boomerang.acceleration.r=0;this.boomerang.acceleration.theta=0}, 1000);
+        // setTimeout(()=>{this.boomerang.acceleration.r=0;this.boomerang.acceleration.theta=0}, 1000);
         
         // this.boomerang.setdirMagocity(dirMag.x, dirMag.y);
         this.throwCount ++;
@@ -424,9 +446,11 @@ class Game extends Phaser.Scene{
         this.disableLevelPhysics();
         this.level += 1;
         if(this.level >= this.levels.length){
+            this.win();
             this.level = 0;
+        } else {
+            this.zoomToLevel();
         }
-        this.zoomToLevel();
     }
     
     createLevels(){
@@ -435,7 +459,10 @@ class Game extends Phaser.Scene{
         this.levels = [];
         for(let l=0; l<this.levelNum; l++){
             let level = this.cache.json.get('level' + (l+1));
-            let groundHeight = level.properties.groundHeight || 1;
+            let groundHeight = 1;
+            if(level.properties && level.properties.groundHeight){
+                groundHeight = level.properties.groundHeight;
+            }
             let angleDelta = (level.tilewidth) / this.planetRadius;
             let levelConfig = {
                 minTheta: startAngle,
@@ -445,7 +472,7 @@ class Game extends Phaser.Scene{
             for(let h=0; h<level.height; h++){
                 for(let w=0; w<level.width; w++){
                     let c = level.layers[0].data[w + h*level.width];
-                    if(!c)
+                    if(!c || [3,4,5,7,8,9,11,12,14,15,16,17,18,19,20,21,22].indexOf(c) === -1)
                         continue;
                     let r = this.planetRadius + level.tileheight * (level.height - h - .5) - groundHeight*level.tileheight;
                     let theta = startAngle + angleDelta * w;
@@ -455,6 +482,7 @@ class Game extends Phaser.Scene{
                         } else {
                             let p = new PolarSprite(this, theta, r, 'orangeman', 22 - c);
                             // debugger;
+                            p.setSize(32, 64);
                             p.r += level.tileheight / 4;
                             console.log('player' + (c - 8), p.r, p.x, p.y)
                             this.physics.add(p);
@@ -544,7 +572,7 @@ class Game extends Phaser.Scene{
             this.levels.push(levelConfig);
             
             
-            startAngle = levelConfig.maxTheta - angleDelta * 4;
+            startAngle = levelConfig.maxTheta - angleDelta * 3;
         }
     }
 
